@@ -1,0 +1,22 @@
+{
+  "name": "@ebusewa/common",
+  "version": "1.0.1",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:types": "tsc -p tsconfig.build.json",
+    "dev": "tsup src/index.ts --watch",
+    "lint": "eslint src --ext ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "rimraf": "^5.0.0"
+  }
+}

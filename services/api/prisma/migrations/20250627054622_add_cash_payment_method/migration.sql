@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `Payment` MODIFY `method` ENUM('ESEWA', 'KHALTI', 'IPS_CONNECT', 'MANUAL', 'CASH') NOT NULL;

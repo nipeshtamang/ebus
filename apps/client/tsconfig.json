@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@ebusewa/common": ["../../packages/common/dist/index.d.ts"]
+    }
+  },
+  "include": ["src"],
+  "references": [{ "path": "../../packages/common" }]
+}

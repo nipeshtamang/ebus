@@ -1,17 +1,37 @@
 {
+  "name": "ebusewa",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
   "scripts": {
-    "Backend": "cd Backend && npm run dev",
-    "Frontend": "cd Frontend && npm run dev",
-    "dev": "concurrently \"npm run Backend\" \"npm run Frontend\""
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:client\" \"npm run dev:admin\" \"npm run dev:superadmin\"",
+    "dev:api": "npm run dev --workspace=@ebusewa/api",
+    "dev:client": "npm run dev --workspace=@ebusewa/client",
+    "dev:admin": "npm run dev --workspace=@ebusewa/admin",
+    "dev:superadmin": "npm run dev --workspace=@ebusewa/superadmin",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
   },
   "devDependencies": {
-    "tailwindcss": "^3.4.17"
+    "@types/file-saver": "^2.0.7",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "prettier": "^3.0.0",
+    "process": "^0.11.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@paypal/checkout-server-sdk": "^1.0.3",
-    "@paypal/paypal-server-sdk": "^1.1.0",
-    "@paypal/react-paypal-js": "^8.8.3",
-    "concurrently": "^9.1.2",
-    "nodemailer": "^7.0.3"
+    "bcrypt": "^6.0.0",
+    "file-saver": "^2.0.5",
+    "puppeteer": "^24.15.0"
   }
 }

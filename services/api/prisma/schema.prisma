@@ -1,0 +1,251 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model Account {
+  id                Int      @id @default(autoincrement())
+  userId            Int
+  provider          String
+  providerAccountId String
+  accessToken       String?
+  refreshToken      String?
+  expiresAt         Int?
+  tokenType         String?
+  scope             String?
+  idToken           String?
+  sessionState      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+  @@index([userId], map: "Account_userId_fkey")
+}
+
+model EmailOTP {
+  id        Int      @id @default(autoincrement())
+  email     String
+  otp       String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model User {
+  id            Int                  @id @default(autoincrement())
+  name          String
+  email         String               @unique
+  emailVerified Boolean              @default(false)
+  phoneNumber   String               @unique
+  passwordHash  String
+  role          Role                 @default(CLIENT)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  profileImage  String?              @db.Text
+  accounts      Account[]
+  auditLogs     AuditLog[]
+  bookings      Booking[]
+  orders        Order[]
+  resetTokens   PasswordResetToken[]
+  payments      Payment[]
+  reservations  Reservation[]
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "PasswordResetToken_userId_fkey")
+}
+
+model Route {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
+  origin      String
+  destination String
+  schedules   Schedule[]
+}
+
+model Bus {
+  id         Int        @id @default(autoincrement())
+  name       String
+  layoutType String
+  seatCount  Int
+  schedules  Schedule[]
+}
+
+model Schedule {
+  id           Int           @id @default(autoincrement())
+  routeId      Int
+  busId        Int
+  departure    DateTime
+  isReturn     Boolean       @default(false)
+  fare         Float
+  bookings     Booking[]
+  reservations Reservation[]
+  bus          Bus           @relation(fields: [busId], references: [id])
+  route        Route         @relation(fields: [routeId], references: [id])
+  seats        Seat[]
+
+  @@index([routeId, departure])
+  @@index([busId], map: "Schedule_busId_fkey")
+}
+
+model Seat {
+  id          Int          @id @default(autoincrement())
+  scheduleId  Int
+  seatNumber  String
+  isBooked    Boolean      @default(false)
+  booking     Booking?     @relation("SeatBooking")
+  reservation Reservation? @relation("SeatReservation")
+  schedule    Schedule     @relation(fields: [scheduleId], references: [id])
+
+  @@unique([scheduleId, seatNumber])
+}
+
+model Reservation {
+  id         Int               @id @default(autoincrement())
+  userId     Int
+  scheduleId Int
+  seatId     Int               @unique
+  status     ReservationStatus @default(PENDING)
+  reservedAt DateTime          @default(now())
+  expiresAt  DateTime
+  bookingId  Int?              @unique
+  booking    Booking?          @relation("ReservationBooking", fields: [bookingId], references: [id])
+  schedule   Schedule          @relation(fields: [scheduleId], references: [id])
+  seat       Seat              @relation("SeatReservation", fields: [seatId], references: [id])
+  user       User              @relation(fields: [userId], references: [id])
+
+  @@unique([scheduleId, seatId])
+  @@index([userId], map: "Reservation_userId_fkey")
+}
+
+model Order {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  createdAt DateTime  @default(now())
+  bookings  Booking[]
+  user      User      @relation(fields: [userId], references: [id])
+  ticket    Ticket?
+
+  @@index([userId], map: "Order_userId_fkey")
+}
+
+model Booking {
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  orderId         Int?
+  scheduleId      Int
+  seatId          Int           @unique
+  status          BookingStatus @default(BOOKED)
+  cancellationFee Float?
+  refundedAmount  Float?
+  createdAt       DateTime      @default(now())
+  deletedAt       DateTime?
+  passengerEmail  String?
+  passengerId     String?
+  passengerName   String?
+  passengerPhone  String?
+  order           Order?        @relation(fields: [orderId], references: [id])
+  schedule        Schedule      @relation(fields: [scheduleId], references: [id])
+  seat            Seat          @relation("SeatBooking", fields: [seatId], references: [id])
+  user            User          @relation(fields: [userId], references: [id])
+  payment         Payment?
+  reservation     Reservation?  @relation("ReservationBooking")
+
+  @@unique([scheduleId, seatId])
+  @@index([orderId], map: "Booking_orderId_fkey")
+  @@index([userId], map: "Booking_userId_fkey")
+}
+
+model Ticket {
+  id           Int      @id @default(autoincrement())
+  qrCode       String   @db.Text
+  issuedAt     DateTime @default(now())
+  ticketNumber String   @unique
+  orderId      Int      @unique
+  order        Order    @relation(fields: [orderId], references: [id])
+}
+
+model Payment {
+  id            Int           @id @default(autoincrement())
+  userId        Int
+  bookingId     Int?          @unique
+  amount        Float
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  transactionId String?
+  createdAt     DateTime      @default(now())
+  deletedAt     DateTime?
+  booking       Booking?      @relation(fields: [bookingId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "Payment_userId_fkey")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  action    String
+  entity    String
+  entityId  Int
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "AuditLog_userId_fkey")
+}
+
+/// User roles
+enum Role {
+  SUPERADMIN
+  ADMIN
+  CLIENT
+}
+
+/// Payment methods
+enum PaymentMethod {
+  ESEWA
+  KHALTI
+  IPS_CONNECT
+  BANK
+  CASH
+}
+
+/// Payment status
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+/// Reservation states
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  EXPIRED
+}
+
+/// Booking status
+enum BookingStatus {
+  BOOKED
+  CANCELLED
+  COMPLETED
+}
