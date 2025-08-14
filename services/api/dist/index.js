@@ -18,7 +18,7 @@ process.on("unhandledRejection", (reason, _promise) => {
     console.error("Unhandled Rejection:", reason);
 });
 // Run server and test DB
-app.listen(port, async () => {
-    console.log(`API running on port ${port}`);
+app.listen(port, '0.0.0.0', async () => {
+    console.log(`API running on port ${port} and accessible from external IPs`);
     await testDatabaseConnection(); // <- call the test
 });

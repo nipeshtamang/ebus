@@ -29,15 +29,19 @@ export default defineConfig({
   },
 
   server: {
-    host: true,
+    host: '0.0.0.0', // Allow external access
     port: 3000,
+    strictPort: true, // Fail if port is already in use
     allowedHosts: [
       "2fd9-2400-1a00-b040-c463-d14c-df81-1a3e-d1e7.ngrok-free.app",
+      "161.129.67.102", // Your server IP
+      "localhost",
+      "127.0.0.1"
     ],
   },
 
   build: {
-    chunkSizeWarningLimit: 1500,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       external: [
         "winston",
@@ -52,15 +56,22 @@ export default defineConfig({
         "events",
       ],
       output: {
-        manualChunks(id) {
-          if (id.includes("node_modules")) {
-            return id
-              .toString()
-              .split("node_modules/")[1]
-              .split("/")[0]
-              .toString();
-          }
-        },
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': [
+            '@radix-ui/react-accordion',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-tabs',
+            'class-variance-authority',
+            'clsx',
+            'tailwind-merge',
+            'lucide-react'
+          ],
+          'utils-vendor': ['axios', 'zod'],
+          'query-vendor': ['@tanstack/react-query'],
+          'common': ['@ebusewa/common']
+        }
       },
     },
   },

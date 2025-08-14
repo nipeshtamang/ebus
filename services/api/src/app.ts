@@ -50,14 +50,23 @@ app.use(compression());
 // CORS configuration
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:3000",
   "http://localhost:3002",
   "http://localhost:3006",
+  "http://161.129.67.102:3000",
+  "http://161.129.67.102:3002",
+  "http://161.129.67.102:3006",
+  "http://161.129.67.102:3001",
 ];
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      // Allow any origin in development
+      if (process.env.NODE_ENV === 'development') {
         return callback(null, true);
       }
       return callback(new Error("Not allowed by CORS"));

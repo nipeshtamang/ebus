@@ -11,9 +11,49 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0', // Allow external access
     port: 3002,
+    strictPort: true, // Fail if port is already in use
     proxy: {
       "/api": "http://localhost:3001",
     },
+    allowedHosts: [
+      "161.129.67.102", // Your server IP
+      "localhost",
+      "127.0.0.1"
+    ],
   },
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': [
+            '@radix-ui/react-alert-dialog',
+            '@radix-ui/react-avatar',
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-label',
+            '@radix-ui/react-scroll-area',
+            '@radix-ui/react-select',
+            '@radix-ui/react-separator',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-tooltip',
+            'lucide-react',
+            'class-variance-authority',
+            'clsx',
+            'tailwind-merge',
+            'sonner',
+            'recharts'
+          ],
+          'utils-vendor': ['zod', 'axios'],
+          'query-vendor': ['@tanstack/react-query'],
+          'common': ['@ebusewa/common']
+        }
+      }
+    }
+  }
 });

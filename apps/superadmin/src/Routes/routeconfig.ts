@@ -1,15 +1,18 @@
-import { SuperadminLoginPage } from "@/pages/Authentication/SuperadminLoginPage";
-import SuperAdminDashboard from "@/pages/SuperAdminDashboard";
-import UserManagement from "@/pages/UserManagement";
+import { lazy } from "react";
 import ROUTES from "./routes";
-import FleetManagement from "@/pages/FleetManagement";
-import SystemHealth from "@/pages/SystemHealth";
-import Reports from "@/pages/Reports";
-import Profile from "@/pages/Profile";
-import SystemLogs from "@/pages/SystemLogs";
-import Bookings from "@/pages/Bookings";
-import Payments from "@/pages/Payments";
-import Tickets from "@/pages/Tickets";
+
+// Lazy load components for code splitting
+const SuperadminLoginPage = lazy(() => import("@/pages/Authentication/SuperadminLoginPage").then(module => ({ default: module.SuperadminLoginPage })));
+const SuperAdminDashboard = lazy(() => import("@/pages/SuperAdminDashboard"));
+const UserManagement = lazy(() => import("@/pages/UserManagement"));
+const FleetManagement = lazy(() => import("@/pages/FleetManagement"));
+const SystemHealth = lazy(() => import("@/pages/SystemHealth"));
+const Reports = lazy(() => import("@/pages/Reports"));
+const Profile = lazy(() => import("@/pages/Profile"));
+const SystemLogs = lazy(() => import("@/pages/SystemLogs"));
+const Bookings = lazy(() => import("@/pages/Bookings"));
+const Payments = lazy(() => import("@/pages/Payments"));
+const Tickets = lazy(() => import("@/pages/Tickets"));
 
 const routeconfig = [
   { path: ROUTES.LoginPage, Component: SuperadminLoginPage },
