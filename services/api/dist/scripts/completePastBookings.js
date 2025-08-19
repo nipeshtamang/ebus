@@ -1,6 +1,8 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 // This script marks bookings as COMPLETED if their schedule date/time has passed.
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+const client_1 = require("@prisma/client");
+const prisma = new client_1.PrismaClient();
 async function completePastBookings() {
     const now = new Date();
     // Find all bookings that are still BOOKED but their schedule has passed

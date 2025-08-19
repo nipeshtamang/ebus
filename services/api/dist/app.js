@@ -1,22 +1,27 @@
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
-import compression from "compression";
-import rateLimit from "express-rate-limit";
-import { errorHandler } from "./middleware/errorHandler";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors"));
+const helmet_1 = __importDefault(require("helmet"));
+const compression_1 = __importDefault(require("compression"));
+const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
+const errorHandler_1 = require("./middleware/errorHandler");
 // Import routes
-import authRoutes from "./routes/auth.routes";
-import userRoutes from "./routes/user.routes";
-import scheduleRoutes from "./routes/schedule.routes";
-import bookingRoutes from "./routes/booking.routes";
-import paymentRoutes from "./routes/payment.routes";
-import adminRoutes from "./routes/admin.routes";
-import fleetRoutes from "./routes/fleet.routes";
-import superadminRoutes from "./routes/superadmin.routes";
-import reportsRoutes from "./routes/reports.routes";
-const app = express();
+const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
+const user_routes_1 = __importDefault(require("./routes/user.routes"));
+const schedule_routes_1 = __importDefault(require("./routes/schedule.routes"));
+const booking_routes_1 = __importDefault(require("./routes/booking.routes"));
+const payment_routes_1 = __importDefault(require("./routes/payment.routes"));
+const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
+const fleet_routes_1 = __importDefault(require("./routes/fleet.routes"));
+const superadmin_routes_1 = __importDefault(require("./routes/superadmin.routes"));
+const reports_routes_1 = __importDefault(require("./routes/reports.routes"));
+const app = (0, express_1.default)();
 // Security middleware
-app.use(helmet({
+app.use((0, helmet_1.default)({
     crossOriginEmbedderPolicy: false,
     contentSecurityPolicy: {
         directives: {
@@ -28,7 +33,7 @@ app.use(helmet({
     },
 }));
 // Rate limiting
-const limiter = rateLimit({
+const limiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // limit each IP to 100 requests per windowMs
     message: "Too many requests from this IP, please try again later.",
@@ -37,7 +42,7 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 // Compression middleware
-app.use(compression());
+app.use((0, compression_1.default)());
 // CORS configuration
 const allowedOrigins = [
     "http://localhost:5173",
@@ -49,7 +54,7 @@ const allowedOrigins = [
     "http://161.129.67.102:3006",
     "http://161.129.67.102:3001",
 ];
-app.use(cors({
+app.use((0, cors_1.default)({
     origin: (origin, callback) => {
         if (!origin)
             return callback(null, true);
@@ -67,8 +72,8 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization"],
 }));
 // Body parsing middleware with increased limits
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express_1.default.json({ limit: "10mb" }));
+app.use(express_1.default.urlencoded({ extended: true, limit: "10mb" }));
 // Request timeout middleware
 app.use((req, res, next) => {
     req.setTimeout(30000, () => {
@@ -93,19 +98,19 @@ app.get("/health", (req, res) => {
     });
 });
 // API routes
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/schedules", scheduleRoutes);
-app.use("/api/bookings", bookingRoutes);
-app.use("/api/payments", paymentRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/fleet", fleetRoutes);
-app.use("/api/superadmin", superadminRoutes);
-app.use("/api/reports", reportsRoutes);
+app.use("/api/auth", auth_routes_1.default);
+app.use("/api/users", user_routes_1.default);
+app.use("/api/schedules", schedule_routes_1.default);
+app.use("/api/bookings", booking_routes_1.default);
+app.use("/api/payments", payment_routes_1.default);
+app.use("/api/admin", admin_routes_1.default);
+app.use("/api/fleet", fleet_routes_1.default);
+app.use("/api/superadmin", superadmin_routes_1.default);
+app.use("/api/reports", reports_routes_1.default);
 // 404 handler
 app.use("*", (req, res) => {
     res.status(404).json({ error: "Route not found" });
 });
 // Error handling middleware
-app.use(errorHandler);
-export default app;
+app.use(errorHandler_1.errorHandler);
+exports.default = app;

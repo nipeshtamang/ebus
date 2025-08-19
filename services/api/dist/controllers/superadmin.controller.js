@@ -1,7 +1,25 @@
-import { superadminService } from "../services/superadmin.service";
-import { Role } from "@ebusewa/common";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createUser = createUser;
+exports.getAllUsers = getAllUsers;
+exports.getUserById = getUserById;
+exports.updateUser = updateUser;
+exports.deleteUser = deleteUser;
+exports.getDashboardStats = getDashboardStats;
+exports.cleanupOrphanedBookings = cleanupOrphanedBookings;
+exports.getSystemLogs = getSystemLogs;
+exports.getRecentActivity = getRecentActivity;
+exports.getTickets = getTickets;
+exports.getSystemHealth = getSystemHealth;
+exports.getTicketById = getTicketById;
+exports.updateTicket = updateTicket;
+exports.deleteTicket = deleteTicket;
+exports.getUserTickets = getUserTickets;
+exports.updateProfile = updateProfile;
+const superadmin_service_1 = require("../services/superadmin.service");
+const common_1 = require("@ebusewa/common");
 // User Management
-export async function createUser(req, res) {
+async function createUser(req, res) {
     try {
         const { name, email, phoneNumber, password, role, profileImage } = req.body;
         // Validation
@@ -10,12 +28,12 @@ export async function createUser(req, res) {
                 error: "All fields are required: name, email, phoneNumber, password, role",
             });
         }
-        if (!Object.values(Role).includes(role)) {
+        if (!Object.values(common_1.Role).includes(role)) {
             return res.status(400).json({
                 error: "Invalid role. Must be one of: SUPERADMIN, ADMIN, CLIENT",
             });
         }
-        const user = await superadminService.createUser({
+        const user = await superadmin_service_1.superadminService.createUser({
             name,
             email,
             phoneNumber,
@@ -32,12 +50,12 @@ export async function createUser(req, res) {
         });
     }
 }
-export async function getAllUsers(req, res) {
+async function getAllUsers(req, res) {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const search = req.query.search;
-        const result = await superadminService.listUsers(page, limit, search);
+        const result = await superadmin_service_1.superadminService.listUsers(page, limit, search);
         res.json(result);
     }
     catch (error) {
@@ -47,13 +65,13 @@ export async function getAllUsers(req, res) {
         });
     }
 }
-export async function getUserById(req, res) {
+async function getUserById(req, res) {
     try {
         const userId = Number(req.params.userId);
         if (isNaN(userId)) {
             return res.status(400).json({ error: "Invalid user ID" });
         }
-        const user = await superadminService.getUserById(userId);
+        const user = await superadmin_service_1.superadminService.getUserById(userId);
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
@@ -66,7 +84,7 @@ export async function getUserById(req, res) {
         });
     }
 }
-export async function updateUser(req, res) {
+async function updateUser(req, res) {
     try {
         const userId = Number(req.params.userId);
         if (isNaN(userId)) {
@@ -74,12 +92,12 @@ export async function updateUser(req, res) {
         }
         const { name, email, phoneNumber, role, profileImage } = req.body;
         // Validation for role if provided
-        if (role && !Object.values(Role).includes(role)) {
+        if (role && !Object.values(common_1.Role).includes(role)) {
             return res.status(400).json({
                 error: "Invalid role. Must be one of: SUPERADMIN, ADMIN, CLIENT",
             });
         }
-        const user = await superadminService.updateUser(userId, {
+        const user = await superadmin_service_1.superadminService.updateUser(userId, {
             name,
             email,
             phoneNumber,
@@ -95,13 +113,13 @@ export async function updateUser(req, res) {
         });
     }
 }
-export async function deleteUser(req, res) {
+async function deleteUser(req, res) {
     try {
         const userId = Number(req.params.userId);
         if (isNaN(userId)) {
             return res.status(400).json({ error: "Invalid user ID" });
         }
-        await superadminService.deleteUser(userId);
+        await superadmin_service_1.superadminService.deleteUser(userId);
         res.status(204).send();
     }
     catch (error) {
@@ -112,9 +130,9 @@ export async function deleteUser(req, res) {
     }
 }
 // Dashboard Analytics
-export async function getDashboardStats(req, res) {
+async function getDashboardStats(req, res) {
     try {
-        const stats = await superadminService.getDashboardStats();
+        const stats = await superadmin_service_1.superadminService.getDashboardStats();
         res.json(stats);
     }
     catch (error) {
@@ -125,9 +143,9 @@ export async function getDashboardStats(req, res) {
     }
 }
 // System Management
-export async function cleanupOrphanedBookings(req, res) {
+async function cleanupOrphanedBookings(req, res) {
     try {
-        const result = await superadminService.cleanupOrphanedBookings();
+        const result = await superadmin_service_1.superadminService.cleanupOrphanedBookings();
         res.json(result);
     }
     catch (error) {
@@ -137,7 +155,7 @@ export async function cleanupOrphanedBookings(req, res) {
         });
     }
 }
-export async function getSystemLogs(req, res) {
+async function getSystemLogs(req, res) {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
@@ -152,7 +170,7 @@ export async function getSystemLogs(req, res) {
         const userId = req.query.userId
             ? parseInt(req.query.userId)
             : undefined;
-        const result = await superadminService.getSystemLogs({
+        const result = await superadmin_service_1.superadminService.getSystemLogs({
             page,
             limit,
             dateFrom,
@@ -170,10 +188,10 @@ export async function getSystemLogs(req, res) {
         });
     }
 }
-export async function getRecentActivity(req, res) {
+async function getRecentActivity(req, res) {
     try {
         const limit = parseInt(req.query.limit) || 20;
-        const activities = await superadminService.getRecentActivity(limit);
+        const activities = await superadmin_service_1.superadminService.getRecentActivity(limit);
         res.json(activities);
     }
     catch (error) {
@@ -183,7 +201,7 @@ export async function getRecentActivity(req, res) {
         });
     }
 }
-export async function getTickets(req, res) {
+async function getTickets(req, res) {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
@@ -200,7 +218,7 @@ export async function getTickets(req, res) {
             ? parseInt(req.query.userId)
             : undefined;
         const status = req.query.status;
-        const result = await superadminService.getTickets({
+        const result = await superadmin_service_1.superadminService.getTickets({
             page,
             limit,
             dateFrom,
@@ -219,9 +237,9 @@ export async function getTickets(req, res) {
     }
 }
 // System Health
-export async function getSystemHealth(req, res) {
+async function getSystemHealth(req, res) {
     try {
-        const health = await superadminService.getSystemHealth();
+        const health = await superadmin_service_1.superadminService.getSystemHealth();
         res.json(health);
     }
     catch (error) {
@@ -230,13 +248,13 @@ export async function getSystemHealth(req, res) {
     }
 }
 // Ticket Management
-export async function getTicketById(req, res) {
+async function getTicketById(req, res) {
     try {
         const ticketId = Number(req.params.ticketId);
         if (isNaN(ticketId)) {
             return res.status(400).json({ error: "Invalid ticket ID" });
         }
-        const ticket = await superadminService.getTicketById(ticketId);
+        const ticket = await superadmin_service_1.superadminService.getTicketById(ticketId);
         if (!ticket) {
             return res.status(404).json({ error: "Ticket not found" });
         }
@@ -249,14 +267,14 @@ export async function getTicketById(req, res) {
         });
     }
 }
-export async function updateTicket(req, res) {
+async function updateTicket(req, res) {
     try {
         const ticketId = Number(req.params.ticketId);
         if (isNaN(ticketId)) {
             return res.status(400).json({ error: "Invalid ticket ID" });
         }
         const data = req.body;
-        const updated = await superadminService.updateTicket(ticketId, data);
+        const updated = await superadmin_service_1.superadminService.updateTicket(ticketId, data);
         res.json(updated);
     }
     catch (error) {
@@ -266,13 +284,13 @@ export async function updateTicket(req, res) {
         });
     }
 }
-export async function deleteTicket(req, res) {
+async function deleteTicket(req, res) {
     try {
         const ticketId = Number(req.params.ticketId);
         if (isNaN(ticketId)) {
             return res.status(400).json({ error: "Invalid ticket ID" });
         }
-        await superadminService.deleteTicket(ticketId);
+        await superadmin_service_1.superadminService.deleteTicket(ticketId);
         res.status(204).send();
     }
     catch (error) {
@@ -282,13 +300,13 @@ export async function deleteTicket(req, res) {
         });
     }
 }
-export async function getUserTickets(req, res) {
+async function getUserTickets(req, res) {
     try {
         const userId = Number(req.params.userId);
         if (isNaN(userId)) {
             return res.status(400).json({ error: "Invalid user ID" });
         }
-        const tickets = await superadminService.getUserTickets(userId);
+        const tickets = await superadmin_service_1.superadminService.getUserTickets(userId);
         res.json(tickets);
     }
     catch (error) {
@@ -298,7 +316,7 @@ export async function getUserTickets(req, res) {
         });
     }
 }
-export async function updateProfile(req, res) {
+async function updateProfile(req, res) {
     try {
         const userId = req.user.userId; // Get user ID from JWT token
         const { name, email, phoneNumber, profileImage } = req.body;
@@ -328,7 +346,7 @@ export async function updateProfile(req, res) {
                 error: "Profile image is too large. Maximum size is 5MB",
             });
         }
-        const user = await superadminService.updateProfile(userId, {
+        const user = await superadmin_service_1.superadminService.updateProfile(userId, {
             name,
             email,
             phoneNumber,

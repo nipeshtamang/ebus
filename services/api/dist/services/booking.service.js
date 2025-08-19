@@ -1,10 +1,28 @@
-import { PrismaClient } from "@prisma/client";
-import { logAudit } from "./audit.service";
-import { generateOptimizedTicketData, generateTicketNumber, generateTicketQRCode, } from "./ticket.service";
-import { sendTicketEmail, sendCancellationEmail } from "./email.service";
-import { format } from "date-fns";
-const prisma = new PrismaClient();
-export async function bookSeats(userId, scheduleId, seats) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.bookSeats = bookSeats;
+exports.bookSeatsForUser = bookSeatsForUser;
+exports.listMyBookings = listMyBookings;
+exports.listAllBookings = listAllBookings;
+exports.listAllBookingsWithPagination = listAllBookingsWithPagination;
+exports.getBookingById = getBookingById;
+exports.cancelBooking = cancelBooking;
+exports.resetSeatStatus = resetSeatStatus;
+exports.cleanupOrphanedBookings = cleanupOrphanedBookings;
+exports.updateBookingStatus = updateBookingStatus;
+exports.adminCancelBooking = adminCancelBooking;
+exports.getBookingByTicketNumber = getBookingByTicketNumber;
+exports.createMultiSeatBooking = createMultiSeatBooking;
+exports.createMultiSeatBookingWithEmail = createMultiSeatBookingWithEmail;
+exports.createMultiSeatBookingForUser = createMultiSeatBookingForUser;
+exports.removeSeatFromBooking = removeSeatFromBooking;
+const client_1 = require("@prisma/client");
+const audit_service_1 = require("./audit.service");
+const ticket_service_1 = require("./ticket.service");
+const email_service_1 = require("./email.service");
+const date_fns_1 = require("date-fns");
+const prisma = new client_1.PrismaClient();
+async function bookSeats(userId, scheduleId, seats) {
     try {
         console.log(`Booking seats for user ${userId}, schedule ${scheduleId}, seats:`, seats);
         // Validate schedule exists
@@ -107,14 +125,14 @@ export async function bookSeats(userId, scheduleId, seats) {
                     },
                 });
                 // Log audit for each booking
-                await Promise.all(createdBookings.map((booking) => logAudit({
+                await Promise.all(createdBookings.map((booking) => (0, audit_service_1.logAudit)({
                     action: "CREATE_BOOKING",
                     entity: "Booking",
                     entityId: booking.id,
                     after: booking,
                 })));
                 // Generate ticket for ALL seats (one ticket per order, multiple seats)
-                const ticketNumber = generateTicketNumber();
+                const ticketNumber = (0, ticket_service_1.generateTicketNumber)();
                 // Extract passenger details from bookings
                 const passengerDetails = createdBookings.map((booking) => ({
                     name: booking.passengerName || user.name,
@@ -123,7 +141,7 @@ export async function bookSeats(userId, scheduleId, seats) {
                     idNumber: booking.passengerId || undefined,
                 }));
                 const totalAmount = schedule.fare * seats.length;
-                const ticketDetails = generateOptimizedTicketData({
+                const ticketDetails = (0, ticket_service_1.generateOptimizedTicketData)({
                     ticketNumber,
                     orderId: order.id,
                     user: {
@@ -152,7 +170,7 @@ export async function bookSeats(userId, scheduleId, seats) {
                     totalAmount,
                 });
                 // Generate QR code for the ticket (includes all seat numbers)
-                const qrCodeData = await generateTicketQRCode(ticketDetails);
+                const qrCodeData = await (0, ticket_service_1.generateTicketQRCode)(ticketDetails);
                 // Create one ticket that covers all seats for this order
                 const ticket = await tx.ticket.create({
                     data: {
@@ -193,7 +211,7 @@ export async function bookSeats(userId, scheduleId, seats) {
         throw error;
     }
 }
-export async function bookSeatsForUser(adminId, data) {
+async function bookSeatsForUser(adminId, data) {
     try {
         console.log("Admin booking request:", { adminId, ...data });
         // Validate required fields
@@ -373,7 +391,7 @@ export async function bookSeatsForUser(adminId, data) {
                     },
                 });
                 // Log audit for each booking
-                await Promise.all(createdBookings.map((booking) => logAudit({
+                await Promise.all(createdBookings.map((booking) => (0, audit_service_1.logAudit)({
                     action: "CREATE_BOOKING",
                     entity: "Booking",
                     entityId: booking.id,
@@ -406,7 +424,7 @@ export async function bookSeatsForUser(adminId, data) {
                 });
                 console.log("Created payment:", payment.id);
                 // Create one ticket for all seats in the order
-                const ticketNumber = generateTicketNumber();
+                const ticketNumber = (0, ticket_service_1.generateTicketNumber)();
                 const ticket = await tx.ticket.create({
                     data: {
                         orderId: order.id,
@@ -415,7 +433,7 @@ export async function bookSeatsForUser(adminId, data) {
                     },
                 });
                 // Log audit
-                await logAudit({
+                await (0, audit_service_1.logAudit)({
                     action: "ADMIN_CREATED_MULTI_SEAT_BOOKING",
                     userId: adminId,
                     entity: "ORDER",
@@ -463,7 +481,7 @@ export async function bookSeatsForUser(adminId, data) {
         }
         console.log(`Successfully booked ${data.seatNumbers.length} seats for customer ${customerId}`);
         // Generate QR code for the ticket after transaction (to avoid timeout)
-        const ticketData = generateOptimizedTicketData({
+        const ticketData = (0, ticket_service_1.generateOptimizedTicketData)({
             ticketNumber: result.ticket.ticketNumber,
             orderId: result.order.id,
             user: {
@@ -515,7 +533,7 @@ export async function bookSeatsForUser(adminId, data) {
             customerName: data.customerName,
             customerPhone: data.customerPhone,
         });
-        const qrCode = await generateTicketQRCode(ticketData);
+        const qrCode = await (0, ticket_service_1.generateTicketQRCode)(ticketData);
         // Update ticket with QR code
         await prisma.ticket.update({
             where: { id: result.ticket.id },
@@ -528,14 +546,14 @@ export async function bookSeatsForUser(adminId, data) {
         // Send ticket email to customer (with correct QR code and phone)
         try {
             const departureDate = new Date(schedule.departure);
-            await sendTicketEmail({
+            await (0, email_service_1.sendTicketEmail)({
                 customerName: data.customerName,
                 customerEmail: data.customerEmail,
                 customerPhone: data.customerPhone,
                 ticketNumber: result.ticket.ticketNumber,
                 seatNumbers: data.seatNumbers,
-                departureTime: format(departureDate, "HH:mm"),
-                departureDate: format(departureDate, "EEEE, MMMM d, yyyy"),
+                departureTime: (0, date_fns_1.format)(departureDate, "HH:mm"),
+                departureDate: (0, date_fns_1.format)(departureDate, "EEEE, MMMM d, yyyy"),
                 origin: schedule.route.origin,
                 destination: schedule.route.destination,
                 busName: schedule.bus.name,
@@ -556,7 +574,7 @@ export async function bookSeatsForUser(adminId, data) {
         throw error;
     }
 }
-export async function listMyBookings(userId) {
+async function listMyBookings(userId) {
     try {
         const bookings = await prisma.booking.findMany({
             where: { userId },
@@ -596,7 +614,7 @@ export async function listMyBookings(userId) {
         throw error;
     }
 }
-export async function listAllBookings() {
+async function listAllBookings() {
     try {
         const bookings = await prisma.booking.findMany({
             include: {
@@ -640,7 +658,7 @@ export async function listAllBookings() {
         throw error;
     }
 }
-export async function listAllBookingsWithPagination(params) {
+async function listAllBookingsWithPagination(params) {
     try {
         const { page, limit, userId, status } = params;
         const skip = (page - 1) * limit;
@@ -708,7 +726,7 @@ export async function listAllBookingsWithPagination(params) {
         throw error;
     }
 }
-export async function getBookingById(bookingId) {
+async function getBookingById(bookingId) {
     try {
         const booking = await prisma.booking.findUnique({
             where: { id: bookingId },
@@ -742,7 +760,7 @@ export async function getBookingById(bookingId) {
         throw error;
     }
 }
-export async function cancelBooking(bookingId, userId, userRole) {
+async function cancelBooking(bookingId, userId, userRole) {
     try {
         const booking = await prisma.booking.findUnique({
             where: { id: bookingId },
@@ -795,7 +813,7 @@ export async function cancelBooking(bookingId, userId, userRole) {
                 data: { isBooked: false },
             });
             // Log audit
-            await logAudit({
+            await (0, audit_service_1.logAudit)({
                 action: "UPDATE_BOOKING",
                 entity: "Booking",
                 entityId: bookingId,
@@ -807,7 +825,7 @@ export async function cancelBooking(bookingId, userId, userRole) {
             timeout: 10000, // 10 second timeout
         });
         // Log audit
-        await logAudit({
+        await (0, audit_service_1.logAudit)({
             action: "UPDATE_BOOKING",
             entity: "Booking",
             entityId: bookingId,
@@ -817,14 +835,14 @@ export async function cancelBooking(bookingId, userId, userRole) {
         // Send cancellation email
         try {
             const departureDate = new Date(booking.schedule.departure);
-            await sendCancellationEmail({
+            await (0, email_service_1.sendCancellationEmail)({
                 customerName: booking.user.name,
                 customerEmail: booking.user.email,
                 customerPhone: booking.user.phoneNumber || undefined,
                 ticketNumber: `EB-${booking.id.toString().padStart(5, "0")}`,
                 seatNumbers: [booking.seat?.seatNumber || "N/A"],
-                departureTime: format(departureDate, "HH:mm"),
-                departureDate: format(departureDate, "EEEE, MMMM d, yyyy"),
+                departureTime: (0, date_fns_1.format)(departureDate, "HH:mm"),
+                departureDate: (0, date_fns_1.format)(departureDate, "EEEE, MMMM d, yyyy"),
                 origin: booking.schedule.route.origin,
                 destination: booking.schedule.route.destination,
                 busName: "Bus Service",
@@ -848,7 +866,7 @@ export async function cancelBooking(bookingId, userId, userRole) {
         throw error;
     }
 }
-export async function resetSeatStatus(scheduleId) {
+async function resetSeatStatus(scheduleId) {
     try {
         console.log(`Resetting seat status for schedule ${scheduleId}`);
         // First, clean up any orphaned bookings
@@ -879,7 +897,7 @@ export async function resetSeatStatus(scheduleId) {
         throw error;
     }
 }
-export async function cleanupOrphanedBookings() {
+async function cleanupOrphanedBookings() {
     try {
         console.log("Cleaning up orphaned bookings...");
         // Find bookings where seat is not booked
@@ -908,7 +926,7 @@ export async function cleanupOrphanedBookings() {
         throw error;
     }
 }
-export async function updateBookingStatus(bookingId, status, reason, adminId) {
+async function updateBookingStatus(bookingId, status, reason, adminId) {
     try {
         console.log(`Updating booking ${bookingId} status to ${status} by admin ${adminId}`);
         const booking = await prisma.booking.findUnique({
@@ -933,7 +951,7 @@ export async function updateBookingStatus(bookingId, status, reason, adminId) {
             },
         });
         // Log audit
-        await logAudit({
+        await (0, audit_service_1.logAudit)({
             action: "UPDATE_BOOKING",
             entity: "Booking",
             entityId: bookingId,
@@ -948,7 +966,7 @@ export async function updateBookingStatus(bookingId, status, reason, adminId) {
         throw error;
     }
 }
-export async function adminCancelBooking(bookingId, reason, adminId) {
+async function adminCancelBooking(bookingId, reason, adminId) {
     try {
         console.log(`Admin ${adminId} cancelling booking ${bookingId}`);
         const booking = await prisma.booking.findUnique({
@@ -1002,7 +1020,7 @@ export async function adminCancelBooking(bookingId, reason, adminId) {
                 });
             }
             // Log audit
-            await logAudit({
+            await (0, audit_service_1.logAudit)({
                 action: "UPDATE_BOOKING",
                 entity: "Booking",
                 entityId: bookingId,
@@ -1014,7 +1032,7 @@ export async function adminCancelBooking(bookingId, reason, adminId) {
             timeout: 10000, // 10 second timeout
         });
         // Log audit
-        await logAudit({
+        await (0, audit_service_1.logAudit)({
             action: "ADMIN_CANCELLED_BOOKING",
             userId: adminId,
             entity: "BOOKING",
@@ -1034,14 +1052,14 @@ export async function adminCancelBooking(bookingId, reason, adminId) {
         try {
             const departureDate = new Date(booking.schedule.departure);
             const refundAmount = booking.payment?.amount || 0;
-            await sendCancellationEmail({
+            await (0, email_service_1.sendCancellationEmail)({
                 customerName: booking.user.name,
                 customerEmail: booking.user.email,
                 customerPhone: booking.user.phoneNumber || undefined,
                 ticketNumber: `EB-${booking.id.toString().padStart(5, "0")}`,
                 seatNumbers: [booking.seat?.seatNumber || "N/A"],
-                departureTime: format(departureDate, "HH:mm"),
-                departureDate: format(departureDate, "EEEE, MMMM d, yyyy"),
+                departureTime: (0, date_fns_1.format)(departureDate, "HH:mm"),
+                departureDate: (0, date_fns_1.format)(departureDate, "EEEE, MMMM d, yyyy"),
                 origin: booking.schedule.route.origin,
                 destination: booking.schedule.route.destination,
                 busName: "Bus Service",
@@ -1066,7 +1084,7 @@ export async function adminCancelBooking(bookingId, reason, adminId) {
         throw error;
     }
 }
-export async function getBookingByTicketNumber(ticketNumber) {
+async function getBookingByTicketNumber(ticketNumber) {
     try {
         // Find the ticket by ticket number
         const ticket = await prisma.ticket.findFirst({
@@ -1152,7 +1170,7 @@ export async function getBookingByTicketNumber(ticketNumber) {
         throw error;
     }
 }
-export async function createMultiSeatBooking(data) {
+async function createMultiSeatBooking(data) {
     // Validate schedule
     const schedule = await prisma.schedule.findUnique({
         where: { id: data.scheduleId },
@@ -1211,8 +1229,8 @@ export async function createMultiSeatBooking(data) {
             });
         }));
         // Generate ticket
-        const ticketNumber = generateTicketNumber();
-        const ticketData = generateOptimizedTicketData({
+        const ticketNumber = (0, ticket_service_1.generateTicketNumber)();
+        const ticketData = (0, ticket_service_1.generateOptimizedTicketData)({
             ticketNumber,
             orderId: order.id,
             user: {
@@ -1246,7 +1264,7 @@ export async function createMultiSeatBooking(data) {
             totalAmount: schedule.fare * bookings.length,
         });
         // Generate QR code for the ticket (minimal info: ticket number, passenger name, phone)
-        const qrCode = await generateTicketQRCode(ticketData);
+        const qrCode = await (0, ticket_service_1.generateTicketQRCode)(ticketData);
         // Create ticket
         const ticket = await tx.ticket.create({
             data: {
@@ -1259,7 +1277,7 @@ export async function createMultiSeatBooking(data) {
     });
 }
 // Add email sending for client bookings
-export async function createMultiSeatBookingWithEmail(data) {
+async function createMultiSeatBookingWithEmail(data) {
     try {
         const result = await createMultiSeatBooking(data);
         // Get user details for email
@@ -1280,14 +1298,14 @@ export async function createMultiSeatBookingWithEmail(data) {
         // Send ticket email to customer
         try {
             const departureDate = new Date(schedule.departure);
-            await sendTicketEmail({
+            await (0, email_service_1.sendTicketEmail)({
                 customerName: data.mainBooker.name,
                 customerEmail: data.mainBooker.email,
                 customerPhone: data.mainBooker.phone,
                 ticketNumber: result.ticketNumber,
                 seatNumbers: data.seats.map((s) => s.seatNumber),
-                departureTime: format(departureDate, "HH:mm"),
-                departureDate: format(departureDate, "EEEE, MMMM d, yyyy"),
+                departureTime: (0, date_fns_1.format)(departureDate, "HH:mm"),
+                departureDate: (0, date_fns_1.format)(departureDate, "EEEE, MMMM d, yyyy"),
                 origin: schedule.route.origin,
                 destination: schedule.route.destination,
                 busName: schedule.bus.name,
@@ -1308,7 +1326,7 @@ export async function createMultiSeatBookingWithEmail(data) {
         throw error;
     }
 }
-export async function createMultiSeatBookingForUser(adminId, data) {
+async function createMultiSeatBookingForUser(adminId, data) {
     try {
         console.log("Creating multi-seat booking for user:", data);
         // Validate schedule
@@ -1403,11 +1421,11 @@ export async function createMultiSeatBookingForUser(adminId, data) {
                     transactionId: `${paymentMethod.toUpperCase()}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
                 },
             });
-            const ticketNumber = generateTicketNumber();
+            const ticketNumber = (0, ticket_service_1.generateTicketNumber)();
             const ticket = await tx.ticket.create({
                 data: { orderId: order.id, ticketNumber, qrCode: "" },
             });
-            await logAudit({
+            await (0, audit_service_1.logAudit)({
                 action: "ADMIN_CREATED_MULTI_SEAT_BOOKING",
                 userId: adminId,
                 entity: "ORDER",
@@ -1433,7 +1451,7 @@ export async function createMultiSeatBookingForUser(adminId, data) {
         }, { timeout: 30000, maxWait: 35000 });
         // Generate QR code and send email for onward trip
         // Generate QR code for the ticket (minimal info: ticket number, passenger name, phone)
-        const onwardTicketData = generateOptimizedTicketData({
+        const onwardTicketData = (0, ticket_service_1.generateOptimizedTicketData)({
             ticketNumber: onwardResult.ticketNumber,
             orderId: onwardResult.order.id,
             user: {
@@ -1467,21 +1485,21 @@ export async function createMultiSeatBookingForUser(adminId, data) {
             paymentMethod: (data.paymentMethod || "CASH").toUpperCase(),
             totalAmount: schedule.fare * data.passengers.length,
         });
-        const onwardQrCode = await generateTicketQRCode(onwardTicketData);
+        const onwardQrCode = await (0, ticket_service_1.generateTicketQRCode)(onwardTicketData);
         await prisma.ticket.update({
             where: { id: onwardResult.ticket.id },
             data: { qrCode: onwardQrCode },
         });
         try {
             const departureDate = new Date(schedule.departure);
-            await sendTicketEmail({
+            await (0, email_service_1.sendTicketEmail)({
                 customerName: data.bookerName,
                 customerEmail: data.bookerEmail || `${data.bookerPhone}@guest.ebusewa.com`,
                 customerPhone: data.bookerPhone,
                 ticketNumber: onwardResult.ticketNumber,
                 seatNumbers: data.passengers.map((p) => p.seatNumber),
-                departureTime: format(departureDate, "HH:mm"),
-                departureDate: format(departureDate, "EEEE, MMMM d, yyyy"),
+                departureTime: (0, date_fns_1.format)(departureDate, "HH:mm"),
+                departureDate: (0, date_fns_1.format)(departureDate, "EEEE, MMMM d, yyyy"),
                 origin: schedule.route.origin,
                 destination: schedule.route.destination,
                 busName: schedule.bus.name,
@@ -1560,11 +1578,11 @@ export async function createMultiSeatBookingForUser(adminId, data) {
                         transactionId: `${paymentMethod.toUpperCase()}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
                     },
                 });
-                const ticketNumber = generateTicketNumber();
+                const ticketNumber = (0, ticket_service_1.generateTicketNumber)();
                 const ticket = await tx.ticket.create({
                     data: { orderId: order.id, ticketNumber, qrCode: "" },
                 });
-                await logAudit({
+                await (0, audit_service_1.logAudit)({
                     action: "ADMIN_CREATED_MULTI_SEAT_BOOKING_RETURN",
                     userId: adminId,
                     entity: "ORDER",
@@ -1591,7 +1609,7 @@ export async function createMultiSeatBookingForUser(adminId, data) {
             }, { timeout: 30000, maxWait: 35000 });
             // Generate QR code and send email for return trip
             // Generate QR code for the ticket (minimal info: ticket number, passenger name, phone)
-            const returnTicketData = generateOptimizedTicketData({
+            const returnTicketData = (0, ticket_service_1.generateOptimizedTicketData)({
                 ticketNumber: returnResult.ticketNumber,
                 orderId: returnResult.order.id,
                 user: {
@@ -1625,21 +1643,21 @@ export async function createMultiSeatBookingForUser(adminId, data) {
                 paymentMethod: (data.paymentMethod || "CASH").toUpperCase(),
                 totalAmount: returnResult.returnSchedule.fare * data.returnPassengers.length,
             });
-            const returnQrCode = await generateTicketQRCode(returnTicketData);
+            const returnQrCode = await (0, ticket_service_1.generateTicketQRCode)(returnTicketData);
             await prisma.ticket.update({
                 where: { id: returnResult.ticket.id },
                 data: { qrCode: returnQrCode },
             });
             try {
                 const departureDate = new Date(returnResult.returnSchedule.departure);
-                await sendTicketEmail({
+                await (0, email_service_1.sendTicketEmail)({
                     customerName: data.bookerName,
                     customerEmail: data.bookerEmail || `${data.bookerPhone}@guest.ebusewa.com`,
                     customerPhone: data.bookerPhone,
                     ticketNumber: returnResult.ticketNumber,
                     seatNumbers: data.returnPassengers.map((p) => p.seatNumber),
-                    departureTime: format(departureDate, "HH:mm"),
-                    departureDate: format(departureDate, "EEEE, MMMM d, yyyy"),
+                    departureTime: (0, date_fns_1.format)(departureDate, "HH:mm"),
+                    departureDate: (0, date_fns_1.format)(departureDate, "EEEE, MMMM d, yyyy"),
                     origin: returnResult.returnSchedule.route.origin,
                     destination: returnResult.returnSchedule.route.destination,
                     busName: returnResult.returnSchedule.bus.name,
@@ -1659,7 +1677,7 @@ export async function createMultiSeatBookingForUser(adminId, data) {
         throw error;
     }
 }
-export async function removeSeatFromBooking(bookingId, seatNumber, adminId) {
+async function removeSeatFromBooking(bookingId, seatNumber, adminId) {
     // Find the booking and seat
     const booking = await prisma.booking.findUnique({
         where: { id: bookingId },
@@ -1714,7 +1732,7 @@ export async function removeSeatFromBooking(bookingId, seatNumber, adminId) {
             });
             if (!schedule || !user || !schedule.bus || !schedule.route) {
                 // If any required data is missing, skip QR update
-                await logAudit({
+                await (0, audit_service_1.logAudit)({
                     action: "TICKET_QR_UPDATE_SKIPPED",
                     entity: "Ticket",
                     entityId: ticket.id,
@@ -1734,7 +1752,7 @@ export async function removeSeatFromBooking(bookingId, seatNumber, adminId) {
                         data: { amount: totalAmount },
                     });
                 }
-                const ticketDetails = generateOptimizedTicketData({
+                const ticketDetails = (0, ticket_service_1.generateOptimizedTicketData)({
                     ticketNumber: ticket.ticketNumber,
                     orderId: order.id,
                     user: { id: user.id, name: user.name, phoneNumber: user.phoneNumber },
@@ -1763,7 +1781,7 @@ export async function removeSeatFromBooking(bookingId, seatNumber, adminId) {
                     paymentMethod: "PENDING",
                     totalAmount,
                 });
-                const qrCodeData = await generateTicketQRCode(ticketDetails);
+                const qrCodeData = await (0, ticket_service_1.generateTicketQRCode)(ticketDetails);
                 await prisma.ticket.update({
                     where: { id: ticket.id },
                     data: { qrCode: qrCodeData },
@@ -1772,7 +1790,7 @@ export async function removeSeatFromBooking(bookingId, seatNumber, adminId) {
         }
     }
     // Optionally, log audit
-    await logAudit({
+    await (0, audit_service_1.logAudit)({
         action: "REMOVE_SEAT_FROM_BOOKING",
         entity: "Booking",
         entityId: bookingId,

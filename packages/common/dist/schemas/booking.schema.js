@@ -1,82 +1,85 @@
-import { z } from "zod";
-import { PaymentMethod, } from "../types/booking.type";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.reserveSeatsSchema = exports.adminCreateBookingSchema = exports.createRefundSchema = exports.createPaymentSchema = exports.cancelBookingSchema = exports.createBookingSchema = exports.passengerDetailsSchema = exports.searchTripsSchema = void 0;
+const zod_1 = require("zod");
+const booking_type_1 = require("../types/booking.type");
 // Search for trips
-export const searchTripsSchema = z.object({
-    origin: z.string().min(1, "Origin is required"),
-    destination: z.string().min(1, "Destination is required"),
-    departureDate: z.string().datetime("Invalid departure date"),
-    returnDate: z.string().datetime("Invalid return date").optional(),
-    passengers: z.number().min(1, "At least 1 passenger required").optional(),
+exports.searchTripsSchema = zod_1.z.object({
+    origin: zod_1.z.string().min(1, "Origin is required"),
+    destination: zod_1.z.string().min(1, "Destination is required"),
+    departureDate: zod_1.z.string().datetime("Invalid departure date"),
+    returnDate: zod_1.z.string().datetime("Invalid return date").optional(),
+    passengers: zod_1.z.number().min(1, "At least 1 passenger required").optional(),
 });
 // Passenger details for each seat
-export const passengerDetailsSchema = z.object({
-    seatNumber: z.string().min(1, "Seat number is required"),
-    passengerName: z.string().min(1, "Passenger name is required"),
-    passengerPhone: z.string().min(1, "Passenger phone is required"),
-    passengerEmail: z.string().email("Invalid email format").optional(),
-    passengerIdNumber: z.string().optional(), // For ID card/passport number
-    passengerAge: z.number().min(0).max(120).optional(),
-    passengerGender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
+exports.passengerDetailsSchema = zod_1.z.object({
+    seatNumber: zod_1.z.string().min(1, "Seat number is required"),
+    passengerName: zod_1.z.string().min(1, "Passenger name is required"),
+    passengerPhone: zod_1.z.string().min(1, "Passenger phone is required"),
+    passengerEmail: zod_1.z.string().email("Invalid email format").optional(),
+    passengerIdNumber: zod_1.z.string().optional(), // For ID card/passport number
+    passengerAge: zod_1.z.number().min(0).max(120).optional(),
+    passengerGender: zod_1.z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
 });
 // Create booking with passenger details
-export const createBookingSchema = z.object({
-    scheduleId: z.number().positive("Invalid schedule ID"),
-    passengers: z
-        .array(passengerDetailsSchema)
+exports.createBookingSchema = zod_1.z.object({
+    scheduleId: zod_1.z.number().positive("Invalid schedule ID"),
+    passengers: zod_1.z
+        .array(exports.passengerDetailsSchema)
         .min(1, "At least one passenger required"),
-    returnScheduleId: z
+    returnScheduleId: zod_1.z
         .number()
         .positive("Invalid return schedule ID")
         .optional(),
-    returnPassengers: z.array(passengerDetailsSchema).optional(),
+    returnPassengers: zod_1.z.array(exports.passengerDetailsSchema).optional(),
     // Main booker details (for contact purposes)
-    bookerName: z.string().min(1, "Booker name is required"),
-    bookerPhone: z.string().min(1, "Booker phone is required"),
-    bookerEmail: z.string().email("Invalid email format").optional(),
+    bookerName: zod_1.z.string().min(1, "Booker name is required"),
+    bookerPhone: zod_1.z.string().min(1, "Booker phone is required"),
+    bookerEmail: zod_1.z.string().email("Invalid email format").optional(),
 });
 // Cancel booking
-export const cancelBookingSchema = z.object({
-    bookingId: z.number().positive("Invalid booking ID"),
-    reason: z.string().optional(),
-    overrideCancellationPolicy: z.boolean().optional(),
+exports.cancelBookingSchema = zod_1.z.object({
+    bookingId: zod_1.z.number().positive("Invalid booking ID"),
+    reason: zod_1.z.string().optional(),
+    overrideCancellationPolicy: zod_1.z.boolean().optional(),
 });
 // Payment
-export const createPaymentSchema = z.object({
-    bookingId: z.number().positive("Invalid booking ID"),
-    amount: z.number().positive("Invalid amount"),
-    method: z.nativeEnum(PaymentMethod),
+exports.createPaymentSchema = zod_1.z.object({
+    bookingId: zod_1.z.number().positive("Invalid booking ID"),
+    amount: zod_1.z.number().positive("Invalid amount"),
+    method: zod_1.z.nativeEnum(booking_type_1.PaymentMethod),
 });
 // Refund
-export const createRefundSchema = z.object({
-    bookingId: z.number().positive("Invalid booking ID"),
-    amount: z.number().positive("Invalid amount"),
-    reason: z.string().min(1, "Refund reason is required"),
+exports.createRefundSchema = zod_1.z.object({
+    bookingId: zod_1.z.number().positive("Invalid booking ID"),
+    amount: zod_1.z.number().positive("Invalid amount"),
+    reason: zod_1.z.string().min(1, "Refund reason is required"),
 });
 // Admin booking management with passenger details
-export const adminCreateBookingSchema = z.object({
-    userId: z.number().positive("Invalid user ID").optional(),
-    scheduleId: z.number().positive("Invalid schedule ID"),
-    passengers: z
-        .array(passengerDetailsSchema)
+exports.adminCreateBookingSchema = zod_1.z.object({
+    userId: zod_1.z.number().positive("Invalid user ID").optional(),
+    scheduleId: zod_1.z.number().positive("Invalid schedule ID"),
+    passengers: zod_1.z
+        .array(exports.passengerDetailsSchema)
         .min(1, "At least one passenger required"),
-    returnScheduleId: z
+    returnScheduleId: zod_1.z
         .number()
         .positive("Invalid return schedule ID")
         .optional(),
-    returnPassengers: z.array(passengerDetailsSchema).optional(),
+    returnPassengers: zod_1.z.array(exports.passengerDetailsSchema).optional(),
     // Main booker details (for contact purposes)
-    bookerName: z.string().min(1, "Booker name is required"),
-    bookerPhone: z.string().min(1, "Booker phone is required"),
-    bookerEmail: z.string().email("Invalid email format").optional(),
-    paymentMethod: z
+    bookerName: zod_1.z.string().min(1, "Booker name is required"),
+    bookerPhone: zod_1.z.string().min(1, "Booker phone is required"),
+    bookerEmail: zod_1.z.string().email("Invalid email format").optional(),
+    paymentMethod: zod_1.z
         .enum(["CASH", "ESEWA", "KHALTI", "IPS_CONNECT", "BANK", "MANUAL"])
         .optional(),
 });
 // Seat reservation
-export const reserveSeatsSchema = z.object({
-    scheduleId: z.number().positive("Invalid schedule ID"),
-    seatNumbers: z.array(z.string()).min(1, "At least one seat required"),
-    holdDuration: z
+exports.reserveSeatsSchema = zod_1.z.object({
+    scheduleId: zod_1.z.number().positive("Invalid schedule ID"),
+    seatNumbers: zod_1.z.array(zod_1.z.string()).min(1, "At least one seat required"),
+    holdDuration: zod_1.z
         .number()
         .min(300, "Minimum hold duration is 5 minutes")
         .optional(), // in seconds

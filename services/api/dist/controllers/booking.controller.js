@@ -1,10 +1,57 @@
-import { createBookingSchema, adminCreateBookingSchema } from "@ebusewa/common";
-import * as bookingService from "../services/booking.service";
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
-export async function createBooking(req, res) {
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createBooking = createBooking;
+exports.getMyBookings = getMyBookings;
+exports.getAllBookings = getAllBookings;
+exports.getBookingById = getBookingById;
+exports.getBookingByTicketNumber = getBookingByTicketNumber;
+exports.createBookingForUser = createBookingForUser;
+exports.cancelBooking = cancelBooking;
+exports.resetSeatStatus = resetSeatStatus;
+exports.cleanupOrphanedBookings = cleanupOrphanedBookings;
+exports.updateBookingStatus = updateBookingStatus;
+exports.adminCancelBooking = adminCancelBooking;
+exports.removeSeatFromBooking = removeSeatFromBooking;
+const common_1 = require("@ebusewa/common");
+const bookingService = __importStar(require("../services/booking.service"));
+const client_1 = require("@prisma/client");
+const prisma = new client_1.PrismaClient();
+async function createBooking(req, res) {
     try {
-        const { success, data, error } = createBookingSchema.safeParse(req.body);
+        const { success, data, error } = common_1.createBookingSchema.safeParse(req.body);
         if (!success)
             return res.status(400).json(error.flatten());
         const userId = req.user.userId;
@@ -43,7 +90,7 @@ export async function createBooking(req, res) {
         });
     }
 }
-export async function getMyBookings(req, res) {
+async function getMyBookings(req, res) {
     try {
         const userId = req.user.userId;
         const list = await bookingService.listMyBookings(userId);
@@ -56,7 +103,7 @@ export async function getMyBookings(req, res) {
         });
     }
 }
-export async function getAllBookings(req, res) {
+async function getAllBookings(req, res) {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -79,7 +126,7 @@ export async function getAllBookings(req, res) {
         });
     }
 }
-export async function getBookingById(req, res) {
+async function getBookingById(req, res) {
     try {
         const bookingId = Number(req.params.id);
         if (isNaN(bookingId)) {
@@ -98,7 +145,7 @@ export async function getBookingById(req, res) {
         });
     }
 }
-export async function getBookingByTicketNumber(req, res) {
+async function getBookingByTicketNumber(req, res) {
     try {
         const { ticketNumber } = req.params;
         if (!ticketNumber) {
@@ -119,10 +166,10 @@ export async function getBookingByTicketNumber(req, res) {
         });
     }
 }
-export async function createBookingForUser(req, res) {
+async function createBookingForUser(req, res) {
     try {
         console.log("Admin booking request body:", req.body);
-        const { success, data, error } = adminCreateBookingSchema.safeParse(req.body);
+        const { success, data, error } = common_1.adminCreateBookingSchema.safeParse(req.body);
         if (!success) {
             console.log("Schema validation failed:", error.flatten());
             return res.status(400).json(error.flatten());
@@ -149,7 +196,7 @@ export async function createBookingForUser(req, res) {
         });
     }
 }
-export async function cancelBooking(req, res) {
+async function cancelBooking(req, res) {
     try {
         const bookingId = Number(req.params.bookingId);
         if (isNaN(bookingId)) {
@@ -167,7 +214,7 @@ export async function cancelBooking(req, res) {
         });
     }
 }
-export async function resetSeatStatus(req, res) {
+async function resetSeatStatus(req, res) {
     try {
         const { scheduleId } = req.params;
         const scheduleIdNum = Number(scheduleId);
@@ -190,7 +237,7 @@ export async function resetSeatStatus(req, res) {
         });
     }
 }
-export async function cleanupOrphanedBookings(req, res) {
+async function cleanupOrphanedBookings(req, res) {
     try {
         const result = await bookingService.cleanupOrphanedBookings();
         res.json({
@@ -205,7 +252,7 @@ export async function cleanupOrphanedBookings(req, res) {
         });
     }
 }
-export async function updateBookingStatus(req, res) {
+async function updateBookingStatus(req, res) {
     try {
         const bookingId = Number(req.params.id);
         if (isNaN(bookingId)) {
@@ -226,7 +273,7 @@ export async function updateBookingStatus(req, res) {
         });
     }
 }
-export async function adminCancelBooking(req, res) {
+async function adminCancelBooking(req, res) {
     try {
         const bookingId = Number(req.params.bookingId);
         if (isNaN(bookingId)) {
@@ -254,7 +301,7 @@ export async function adminCancelBooking(req, res) {
         });
     }
 }
-export async function removeSeatFromBooking(req, res) {
+async function removeSeatFromBooking(req, res) {
     try {
         const bookingId = Number(req.params.bookingId);
         const seatNumber = req.params.seatNumber;

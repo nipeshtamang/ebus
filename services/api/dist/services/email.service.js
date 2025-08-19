@@ -1,8 +1,49 @@
-import { prisma } from "../config/db";
-import * as nodemailer from "nodemailer";
-import { env } from "../config/env";
-import { logAudit } from "./audit.service";
-import { htmlToPdfBuffer } from "./pdf.service";
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.sendOTP = sendOTP;
+exports.verifyOTP = verifyOTP;
+exports.sendTicketEmail = sendTicketEmail;
+exports.sendCancellationEmail = sendCancellationEmail;
+exports.sendPasswordResetEmail = sendPasswordResetEmail;
+exports.sendWelcomeEmail = sendWelcomeEmail;
+const db_1 = require("../config/db");
+const nodemailer = __importStar(require("nodemailer"));
+const env_1 = require("../config/env");
+const audit_service_1 = require("./audit.service");
+const pdf_service_1 = require("./pdf.service");
 // Generate a 6-digit OTP
 function generateOTP() {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -12,32 +53,32 @@ async function sendEmailOTP(email, otp) {
     const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
-            user: env.SMTP_USER,
-            pass: env.SMTP_PASS,
+            user: env_1.env.SMTP_USER,
+            pass: env_1.env.SMTP_PASS,
         },
     });
     // Verify transporter configuration
     await transporter.verify();
     await transporter.sendMail({
-        from: `"Ebusewa" <${env.SMTP_USER}>`,
+        from: `"Ebusewa" <${env_1.env.SMTP_USER}>`,
         to: email,
         subject: "Your OTP Code",
         text: `Your OTP code is: ${otp}`,
         html: `<p>Your OTP code is: <b>${otp}</b></p>`,
     });
 }
-export async function sendOTP(data) {
+async function sendOTP(data) {
     const { email } = data;
     // Generate OTP
     const otp = generateOTP();
     // Set expiration (15 minutes from now)
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
     // Delete any existing OTPs for this email
-    await prisma.emailOTP.deleteMany({
+    await db_1.prisma.emailOTP.deleteMany({
         where: { email },
     });
     // Create new OTP record
-    await prisma.emailOTP.create({
+    await db_1.prisma.emailOTP.create({
         data: {
             email,
             otp,
@@ -47,10 +88,10 @@ export async function sendOTP(data) {
     // Send OTP via email
     await sendEmailOTP(email, otp);
 }
-export async function verifyOTP(data) {
+async function verifyOTP(data) {
     const { email, otp } = data;
     // Find the OTP record
-    const otpRecord = await prisma.emailOTP.findFirst({
+    const otpRecord = await db_1.prisma.emailOTP.findFirst({
         where: {
             email,
             otp,
@@ -64,17 +105,17 @@ export async function verifyOTP(data) {
         return false;
     }
     // Check if user is SUPERADMIN
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await db_1.prisma.user.findUnique({ where: { email } });
     if (user && user.role === "SUPERADMIN") {
         return false;
     }
     // Mark OTP as used
-    await prisma.emailOTP.update({
+    await db_1.prisma.emailOTP.update({
         where: { id: otpRecord.id },
         data: { used: true },
     });
     // Mark user as email verified
-    await prisma.user.updateMany({
+    await db_1.prisma.user.updateMany({
         where: { email },
         data: { emailVerified: true },
     });
@@ -90,13 +131,13 @@ const transporter = nodemailer.createTransport({
         pass: process.env.SMTP_PASS,
     },
 });
-export async function sendTicketEmail(data) {
+async function sendTicketEmail(data) {
     try {
         // Use the same HTML (with QR code) for both email and PDF, as before
         const htmlContent = generateTicketEmailHTMLWithQR(data);
         let pdfBuffer = undefined;
         try {
-            pdfBuffer = await htmlToPdfBuffer(htmlContent);
+            pdfBuffer = await (0, pdf_service_1.htmlToPdfBuffer)(htmlContent);
         }
         catch (err) {
             console.error("Failed to generate PDF for ticket email:", err);
@@ -119,14 +160,14 @@ export async function sendTicketEmail(data) {
         const result = await transporter.sendMail(mailOptions);
         console.log("Ticket email sent successfully:", result.messageId);
         // Fetch ticket by ticketNumber to get its id for audit log
-        const ticket = await prisma.ticket.findUnique({
+        const ticket = await db_1.prisma.ticket.findUnique({
             where: { ticketNumber: data.ticketNumber },
         });
         const entityId = ticket?.id;
         if (!entityId) {
             console.error("Could not find ticket for audit log", data.ticketNumber);
         }
-        await logAudit({
+        await (0, audit_service_1.logAudit)({
             action: "TICKET_EMAIL_SENT",
             entity: "Ticket",
             entityId: entityId || 0, // fallback to 0 if not found
@@ -197,13 +238,13 @@ export async function sendTicketEmail(data) {
   `;
     }
 }
-export async function sendCancellationEmail(data) {
+async function sendCancellationEmail(data) {
     try {
         const htmlContent = generateCancellationEmailHTML(data);
         // Generate PDF from HTML
         let pdfBuffer = undefined;
         try {
-            pdfBuffer = await htmlToPdfBuffer(htmlContent);
+            pdfBuffer = await (0, pdf_service_1.htmlToPdfBuffer)(htmlContent);
         }
         catch (err) {
             console.error("Failed to generate PDF for cancellation email:", err);
@@ -225,14 +266,14 @@ export async function sendCancellationEmail(data) {
         const result = await transporter.sendMail(mailOptions);
         console.log("Cancellation email sent successfully:", result.messageId);
         // Fetch ticket by ticketNumber to get its id for audit log
-        const ticket = await prisma.ticket.findUnique({
+        const ticket = await db_1.prisma.ticket.findUnique({
             where: { ticketNumber: data.ticketNumber },
         });
         const entityId = ticket?.id;
         if (!entityId) {
             console.error("Could not find ticket for audit log", data.ticketNumber);
         }
-        await logAudit({
+        await (0, audit_service_1.logAudit)({
             action: "CANCELLATION_EMAIL_SENT",
             entity: "Ticket",
             entityId: entityId || 0, // fallback to 0 if not found
@@ -355,7 +396,7 @@ function generateCancellationEmailHTML(data) {
     </html>
   `;
 }
-export async function sendPasswordResetEmail(email, resetToken) {
+async function sendPasswordResetEmail(email, resetToken) {
     try {
         const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
         const mailOptions = {
@@ -384,7 +425,7 @@ export async function sendPasswordResetEmail(email, resetToken) {
         throw error;
     }
 }
-export async function sendWelcomeEmail(email, name) {
+async function sendWelcomeEmail(email, name) {
     try {
         const mailOptions = {
             from: process.env.SMTP_USER,

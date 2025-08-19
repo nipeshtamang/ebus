@@ -1,6 +1,12 @@
-import { toDataURL } from "qrcode";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.generateOptimizedTicketData = generateOptimizedTicketData;
+exports.generateTicketNumber = generateTicketNumber;
+exports.generateQRCode = generateQRCode;
+exports.generateTicketQRCode = generateTicketQRCode;
+const qrcode_1 = require("qrcode");
 // Utility function to generate optimized ticket data
-export function generateOptimizedTicketData(data) {
+function generateOptimizedTicketData(data) {
     // Optimize the data structure to reduce JSON size
     return {
         tn: data.ticketNumber, // ticketNumber
@@ -41,7 +47,7 @@ export function generateOptimizedTicketData(data) {
         ta: data.totalAmount, // totalAmount
     };
 }
-export function generateTicketNumber() {
+function generateTicketNumber() {
     // Generate a more professional ticket number format: EB-YYYYMMDD-XXXXX
     const date = new Date();
     const dateStr = date.getFullYear().toString() +
@@ -52,14 +58,14 @@ export function generateTicketNumber() {
         .padStart(5, "0");
     return `EB-${dateStr}-${randomNum}`;
 }
-export async function generateQRCode(data, width = 256) {
+async function generateQRCode(data, width = 256) {
     try {
         console.log("Generating QR code with data:", JSON.stringify(data, null, 2));
         // Convert data to JSON string
         const jsonData = JSON.stringify(data);
         console.log("JSON data length:", jsonData.length);
         // Generate QR code as data URL
-        const qrCodeDataURL = await toDataURL(jsonData, {
+        const qrCodeDataURL = await (0, qrcode_1.toDataURL)(jsonData, {
             errorCorrectionLevel: "M",
             type: "image/png",
             margin: 1,
@@ -87,7 +93,7 @@ export async function generateQRCode(data, width = 256) {
         throw new Error("Failed to generate QR code");
     }
 }
-export async function generateTicketQRCode(ticketData) {
+async function generateTicketQRCode(ticketData) {
     try {
         console.log("Generating ticket QR code for ticket:", ticketData.tn);
         // Create a simplified ticket data for QR code with return trip information

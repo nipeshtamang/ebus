@@ -1,7 +1,16 @@
-import { PrismaClient } from "@prisma/client";
-import { logAudit } from "./audit.service";
-const prisma = new PrismaClient();
-export async function getPaymentHistory() {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getPaymentHistory = getPaymentHistory;
+exports.getPaymentHistoryWithPagination = getPaymentHistoryWithPagination;
+exports.getPaymentById = getPaymentById;
+exports.processPayment = processPayment;
+exports.refundPayment = refundPayment;
+exports.getPaymentStats = getPaymentStats;
+exports.processRefundWithCancellation = processRefundWithCancellation;
+const client_1 = require("@prisma/client");
+const audit_service_1 = require("./audit.service");
+const prisma = new client_1.PrismaClient();
+async function getPaymentHistory() {
     try {
         const payments = await prisma.payment.findMany({
             include: {
@@ -47,7 +56,7 @@ export async function getPaymentHistory() {
         throw error;
     }
 }
-export async function getPaymentHistoryWithPagination(params) {
+async function getPaymentHistoryWithPagination(params) {
     try {
         const { page, limit, userId, status } = params;
         const skip = (page - 1) * limit;
@@ -116,7 +125,7 @@ export async function getPaymentHistoryWithPagination(params) {
         throw error;
     }
 }
-export async function getPaymentById(paymentId) {
+async function getPaymentById(paymentId) {
     try {
         return await prisma.payment.findUnique({
             where: { id: paymentId },
@@ -147,7 +156,7 @@ export async function getPaymentById(paymentId) {
         throw error;
     }
 }
-export async function processPayment(data) {
+async function processPayment(data) {
     try {
         const { bookingId, amount, method } = data;
         // Validate booking exists
@@ -211,7 +220,7 @@ export async function processPayment(data) {
             },
         });
         // Log audit
-        await logAudit({
+        await (0, audit_service_1.logAudit)({
             userId: booking.userId,
             action: "CREATE_PAYMENT",
             entity: "Payment",
@@ -225,7 +234,7 @@ export async function processPayment(data) {
         throw error;
     }
 }
-export async function refundPayment(paymentId, _reason) {
+async function refundPayment(paymentId, _reason) {
     try {
         const payment = await prisma.payment.findUnique({
             where: { id: paymentId },
@@ -277,7 +286,7 @@ export async function refundPayment(paymentId, _reason) {
             },
         });
         // Log audit
-        await logAudit({
+        await (0, audit_service_1.logAudit)({
             userId: payment.userId,
             action: "REFUND_PAYMENT",
             entity: "Payment",
@@ -296,7 +305,7 @@ export async function refundPayment(paymentId, _reason) {
         throw error;
     }
 }
-export async function getPaymentStats() {
+async function getPaymentStats() {
     try {
         const totalPayments = await prisma.payment.count();
         const completedPayments = await prisma.payment.count({
@@ -324,7 +333,7 @@ export async function getPaymentStats() {
         throw error;
     }
 }
-export async function processRefundWithCancellation(bookingId, reason, adminId) {
+async function processRefundWithCancellation(bookingId, reason, adminId) {
     try {
         const booking = await prisma.booking.findUnique({
             where: { id: bookingId },
@@ -378,7 +387,7 @@ export async function processRefundWithCancellation(bookingId, reason, adminId) 
             timeout: 15000,
         });
         // Log audit
-        await logAudit({
+        await (0, audit_service_1.logAudit)({
             userId: adminId,
             action: "REFUND_WITH_CANCELLATION",
             entity: "Booking",

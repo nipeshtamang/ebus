@@ -1,9 +1,52 @@
-import { searchSchedulesSchema } from "@ebusewa/common";
-import * as scheduleService from "../services/schedule.service";
-import { createScheduleSchema, updateScheduleSchema } from "@ebusewa/common";
-export async function searchSchedules(req, res) {
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.searchSchedules = searchSchedules;
+exports.getScheduleById = getScheduleById;
+exports.getAllSchedules = getAllSchedules;
+exports.createSchedule = createSchedule;
+exports.updateSchedule = updateSchedule;
+exports.deleteSchedule = deleteSchedule;
+exports.regenerateSeats = regenerateSeats;
+exports.forceDeleteSchedule = forceDeleteSchedule;
+const common_1 = require("@ebusewa/common");
+const scheduleService = __importStar(require("../services/schedule.service"));
+const common_2 = require("@ebusewa/common");
+async function searchSchedules(req, res) {
     try {
-        const { success, data, error } = searchSchedulesSchema.safeParse(req.query);
+        const { success, data, error } = common_1.searchSchedulesSchema.safeParse(req.query);
         if (!success)
             return res.status(400).json(error.flatten());
         // Check if we have origin and destination for direct search
@@ -32,7 +75,7 @@ export async function searchSchedules(req, res) {
         });
     }
 }
-export async function getScheduleById(req, res) {
+async function getScheduleById(req, res) {
     try {
         const scheduleId = Number(req.params.id);
         if (isNaN(scheduleId)) {
@@ -51,7 +94,7 @@ export async function getScheduleById(req, res) {
         });
     }
 }
-export async function getAllSchedules(req, res) {
+async function getAllSchedules(req, res) {
     try {
         const schedules = await scheduleService.getAllSchedules();
         res.json(schedules);
@@ -63,9 +106,9 @@ export async function getAllSchedules(req, res) {
         });
     }
 }
-export async function createSchedule(req, res) {
+async function createSchedule(req, res) {
     try {
-        const { success, data, error } = createScheduleSchema.safeParse(req.body);
+        const { success, data, error } = common_2.createScheduleSchema.safeParse(req.body);
         if (!success)
             return res.status(400).json(error.flatten());
         const schedule = await scheduleService.createSchedule(data);
@@ -78,13 +121,13 @@ export async function createSchedule(req, res) {
         });
     }
 }
-export async function updateSchedule(req, res) {
+async function updateSchedule(req, res) {
     try {
         const scheduleId = Number(req.params.id);
         if (isNaN(scheduleId)) {
             return res.status(400).json({ error: "Invalid schedule ID" });
         }
-        const { success, data, error } = updateScheduleSchema.safeParse(req.body);
+        const { success, data, error } = common_2.updateScheduleSchema.safeParse(req.body);
         if (!success)
             return res.status(400).json(error.flatten());
         const schedule = await scheduleService.updateSchedule(scheduleId, data);
@@ -97,7 +140,7 @@ export async function updateSchedule(req, res) {
         });
     }
 }
-export async function deleteSchedule(req, res) {
+async function deleteSchedule(req, res) {
     try {
         const scheduleId = Number(req.params.id);
         if (isNaN(scheduleId)) {
@@ -113,7 +156,7 @@ export async function deleteSchedule(req, res) {
         });
     }
 }
-export async function regenerateSeats(req, res) {
+async function regenerateSeats(req, res) {
     try {
         const scheduleId = Number(req.params.id);
         if (isNaN(scheduleId)) {
@@ -132,7 +175,7 @@ export async function regenerateSeats(req, res) {
         });
     }
 }
-export async function forceDeleteSchedule(req, res) {
+async function forceDeleteSchedule(req, res) {
     try {
         const scheduleId = Number(req.params.id);
         if (isNaN(scheduleId)) {

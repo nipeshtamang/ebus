@@ -1,16 +1,23 @@
-import { prisma } from "../config/db";
-export async function revenueTrends() {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.revenueTrends = revenueTrends;
+exports.seatUtilization = seatUtilization;
+exports.cancellationStats = cancellationStats;
+exports.reservationHoldAnalytics = reservationHoldAnalytics;
+exports.listAuditLogs = listAuditLogs;
+const db_1 = require("../config/db");
+async function revenueTrends() {
     // Example: total revenue per month
-    return prisma.payment.groupBy({
+    return db_1.prisma.payment.groupBy({
         by: ["createdAt"],
         _sum: { amount: true },
         where: { status: "COMPLETED" },
         orderBy: { createdAt: "asc" },
     });
 }
-export async function seatUtilization() {
+async function seatUtilization() {
     // Example: seat utilization rate per schedule
-    return prisma.schedule.findMany({
+    return db_1.prisma.schedule.findMany({
         select: {
             id: true,
             departure: true,
@@ -19,22 +26,22 @@ export async function seatUtilization() {
         },
     });
 }
-export async function cancellationStats() {
+async function cancellationStats() {
     // Example: count of cancelled bookings per month
-    return prisma.booking.groupBy({
+    return db_1.prisma.booking.groupBy({
         by: ["createdAt"],
         _count: { id: true },
         where: { status: "CANCELLED" },
         orderBy: { createdAt: "asc" },
     });
 }
-export async function reservationHoldAnalytics() {
+async function reservationHoldAnalytics() {
     // Example: count of reservations by status
-    return prisma.reservation.groupBy({
+    return db_1.prisma.reservation.groupBy({
         by: ["status"],
         _count: { id: true },
     });
 }
-export async function listAuditLogs() {
-    return prisma.auditLog.findMany({ orderBy: { createdAt: "desc" } });
+async function listAuditLogs() {
+    return db_1.prisma.auditLog.findMany({ orderBy: { createdAt: "desc" } });
 }

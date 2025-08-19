@@ -1,4 +1,17 @@
-import { prisma } from "../config/db";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.regenerateSeatsForSchedule = regenerateSeatsForSchedule;
+exports.findSchedules = findSchedules;
+exports.findSchedulesByOriginDestination = findSchedulesByOriginDestination;
+exports.findRoundTripSchedules = findRoundTripSchedules;
+exports.searchSchedulesEnhanced = searchSchedulesEnhanced;
+exports.getScheduleWithSeats = getScheduleWithSeats;
+exports.getAllSchedules = getAllSchedules;
+exports.createSchedule = createSchedule;
+exports.updateSchedule = updateSchedule;
+exports.deleteSchedule = deleteSchedule;
+exports.forceDeleteSchedule = forceDeleteSchedule;
+const db_1 = require("../config/db");
 const LAYOUT_CONFIGS = {
     "1/2": {
         seatsPerRow: 3, // 1 left, 2 right
@@ -87,7 +100,7 @@ const LAYOUT_CONFIGS = {
 async function generateSeatsForSchedule(scheduleId, busId) {
     try {
         // Get bus details
-        const bus = await prisma.bus.findUnique({
+        const bus = await db_1.prisma.bus.findUnique({
             where: { id: busId },
         });
         if (!bus) {
@@ -115,7 +128,7 @@ async function generateSeatsForSchedule(scheduleId, busId) {
         }
         // Create seats in database
         if (seatsToCreate.length > 0) {
-            await prisma.seat.createMany({
+            await db_1.prisma.seat.createMany({
                 data: seatsToCreate,
                 skipDuplicates: true,
             });
@@ -129,10 +142,10 @@ async function generateSeatsForSchedule(scheduleId, busId) {
     }
 }
 // Regenerate seats for an existing schedule
-export async function regenerateSeatsForSchedule(scheduleId) {
+async function regenerateSeatsForSchedule(scheduleId) {
     try {
         // Get schedule with bus details
-        const schedule = await prisma.schedule.findUnique({
+        const schedule = await db_1.prisma.schedule.findUnique({
             where: { id: scheduleId },
             include: { bus: true },
         });
@@ -140,14 +153,14 @@ export async function regenerateSeatsForSchedule(scheduleId) {
             throw new Error(`Schedule with ID ${scheduleId} not found`);
         }
         // Check if there are any bookings for this schedule
-        const existingBookings = await prisma.booking.findMany({
+        const existingBookings = await db_1.prisma.booking.findMany({
             where: { scheduleId },
         });
         if (existingBookings.length > 0) {
             throw new Error(`Cannot regenerate seats for schedule with existing bookings. Please cancel all bookings first.`);
         }
         // Delete existing seats
-        await prisma.seat.deleteMany({
+        await db_1.prisma.seat.deleteMany({
             where: { scheduleId },
         });
         // Generate new seats
@@ -160,13 +173,13 @@ export async function regenerateSeatsForSchedule(scheduleId) {
         throw error;
     }
 }
-export async function findSchedules(filters) {
+async function findSchedules(filters) {
     try {
         if (!filters.departureDate)
             throw new Error("departureDate is required");
         const dayStart = new Date(filters.departureDate);
         const dayEnd = new Date(dayStart.getTime() + 86400000);
-        return await prisma.schedule.findMany({
+        return await db_1.prisma.schedule.findMany({
             where: {
                 departure: { gte: dayStart, lt: dayEnd },
                 ...(filters.routeId && { routeId: filters.routeId }),
@@ -189,13 +202,13 @@ export async function findSchedules(filters) {
         throw error;
     }
 }
-export async function findSchedulesByOriginDestination(origin, destination, departureDate, isReturn) {
+async function findSchedulesByOriginDestination(origin, destination, departureDate, isReturn) {
     try {
         if (!departureDate)
             throw new Error("departureDate is required");
         const dayStart = new Date(departureDate);
         const dayEnd = new Date(dayStart.getTime() + 86400000);
-        return await prisma.schedule.findMany({
+        return await db_1.prisma.schedule.findMany({
             where: {
                 departure: { gte: dayStart, lt: dayEnd },
                 route: {
@@ -222,7 +235,7 @@ export async function findSchedulesByOriginDestination(origin, destination, depa
     }
 }
 // New function to search for round-trip schedules
-export async function findRoundTripSchedules(origin, destination, departureDate, returnDate) {
+async function findRoundTripSchedules(origin, destination, departureDate, returnDate) {
     try {
         if (!departureDate || !returnDate) {
             throw new Error("Both departureDate and returnDate are required for round-trip search");
@@ -249,7 +262,7 @@ export async function findRoundTripSchedules(origin, destination, departureDate,
     }
 }
 // Enhanced search function that handles both one-way and round-trip
-export async function searchSchedulesEnhanced(origin, destination, departureDate, returnDate, tripType = 'oneway') {
+async function searchSchedulesEnhanced(origin, destination, departureDate, returnDate, tripType = 'oneway') {
     try {
         if (tripType === 'roundtrip' && returnDate) {
             // For round-trip, return both outbound and return schedules
@@ -273,9 +286,9 @@ export async function searchSchedulesEnhanced(origin, destination, departureDate
         throw error;
     }
 }
-export async function getScheduleWithSeats(scheduleId) {
+async function getScheduleWithSeats(scheduleId) {
     try {
-        return await prisma.schedule.findUnique({
+        return await db_1.prisma.schedule.findUnique({
             where: { id: scheduleId },
             include: {
                 bus: true,
@@ -297,9 +310,9 @@ export async function getScheduleWithSeats(scheduleId) {
         throw error;
     }
 }
-export async function getAllSchedules() {
+async function getAllSchedules() {
     try {
-        return await prisma.schedule.findMany({
+        return await db_1.prisma.schedule.findMany({
             include: {
                 bus: true,
                 route: true,
@@ -320,9 +333,9 @@ export async function getAllSchedules() {
         throw error;
     }
 }
-export async function createSchedule(data) {
+async function createSchedule(data) {
     try {
-        const schedule = await prisma.schedule.create({
+        const schedule = await db_1.prisma.schedule.create({
             data: {
                 routeId: data.routeId,
                 busId: data.busId,
@@ -338,7 +351,7 @@ export async function createSchedule(data) {
         // Generate seats for the new schedule
         await generateSeatsForSchedule(schedule.id, data.busId);
         // Return the schedule with generated seats
-        return await prisma.schedule.findUnique({
+        return await db_1.prisma.schedule.findUnique({
             where: { id: schedule.id },
             include: {
                 bus: true,
@@ -356,7 +369,7 @@ export async function createSchedule(data) {
         throw error;
     }
 }
-export async function updateSchedule(scheduleId, data) {
+async function updateSchedule(scheduleId, data) {
     try {
         const updateData = {};
         if (data.routeId)
@@ -369,7 +382,7 @@ export async function updateSchedule(scheduleId, data) {
             updateData.isReturn = data.isReturn;
         if (data.fare)
             updateData.fare = data.fare;
-        return await prisma.schedule.update({
+        return await db_1.prisma.schedule.update({
             where: { id: scheduleId },
             data: updateData,
             include: {
@@ -383,10 +396,10 @@ export async function updateSchedule(scheduleId, data) {
         throw error;
     }
 }
-export async function deleteSchedule(scheduleId) {
+async function deleteSchedule(scheduleId) {
     try {
         // Check if there are any bookings for this schedule
-        const bookings = await prisma.booking.findMany({
+        const bookings = await db_1.prisma.booking.findMany({
             where: { scheduleId },
             include: {
                 payment: true,
@@ -402,14 +415,14 @@ export async function deleteSchedule(scheduleId) {
             throw new Error(`Cannot delete schedule with ${bookings.length} existing bookings. Please cancel all bookings first.`);
         }
         // Check if there are any reservations for this schedule
-        const reservations = await prisma.reservation.findMany({
+        const reservations = await db_1.prisma.reservation.findMany({
             where: { scheduleId },
         });
         if (reservations.length > 0) {
             throw new Error(`Cannot delete schedule with ${reservations.length} existing reservations. Please cancel all reservations first.`);
         }
         // Delete all related data in a transaction
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await db_1.prisma.$transaction(async (tx) => {
             // Delete all seats for this schedule
             await tx.seat.deleteMany({
                 where: { scheduleId },
@@ -432,10 +445,10 @@ export async function deleteSchedule(scheduleId) {
         throw error;
     }
 }
-export async function forceDeleteSchedule(scheduleId) {
+async function forceDeleteSchedule(scheduleId) {
     try {
         console.log(`Force deleting schedule ${scheduleId}...`);
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await db_1.prisma.$transaction(async (tx) => {
             // Get schedule details for logging
             const schedule = await tx.schedule.findUnique({
                 where: { id: scheduleId },

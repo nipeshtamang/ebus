@@ -1,9 +1,15 @@
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
-import { logger } from "../config/logger";
-import { Role } from "@ebusewa/common";
-const prisma = new PrismaClient();
-export class SuperadminService {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.superadminService = exports.SuperadminService = void 0;
+const client_1 = require("@prisma/client");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const logger_1 = require("../config/logger");
+const common_1 = require("@ebusewa/common");
+const prisma = new client_1.PrismaClient();
+class SuperadminService {
     // User Management
     async createUser(data) {
         try {
@@ -18,7 +24,7 @@ export class SuperadminService {
             }
             // Hash password
             const saltRounds = 12;
-            const passwordHash = await bcrypt.hash(data.password, saltRounds);
+            const passwordHash = await bcryptjs_1.default.hash(data.password, saltRounds);
             // Create user
             const user = await prisma.user.create({
                 data: {
@@ -32,11 +38,11 @@ export class SuperadminService {
             });
             // Log the action
             await this.logAction("CREATE", "User", user.id, null, user);
-            logger.info(`Superadmin created user: ${user.email} with role: ${user.role}`);
+            logger_1.logger.info(`Superadmin created user: ${user.email} with role: ${user.role}`);
             return user;
         }
         catch (error) {
-            logger.error("Error creating user:", error);
+            logger_1.logger.error("Error creating user:", error);
             throw error;
         }
     }
@@ -75,11 +81,11 @@ export class SuperadminService {
             });
             // Log the action
             await this.logAction("UPDATE", "User", userId, beforeUser, updatedUser);
-            logger.info(`Superadmin updated user: ${updatedUser.email}`);
+            logger_1.logger.info(`Superadmin updated user: ${updatedUser.email}`);
             return updatedUser;
         }
         catch (error) {
-            logger.error("Error updating user:", error);
+            logger_1.logger.error("Error updating user:", error);
             throw error;
         }
     }
@@ -112,11 +118,11 @@ export class SuperadminService {
             });
             // Log the action
             await this.logAction("UPDATE", "User", userId, beforeUser, updatedUser);
-            logger.info(`User updated profile: ${updatedUser.email}`);
+            logger_1.logger.info(`User updated profile: ${updatedUser.email}`);
             return updatedUser;
         }
         catch (error) {
-            logger.error("Error updating profile:", error);
+            logger_1.logger.error("Error updating profile:", error);
             throw error;
         }
     }
@@ -161,10 +167,10 @@ export class SuperadminService {
             ]);
             // Log the action
             await this.logAction("DELETE", "User", userId, user, null);
-            logger.info(`Superadmin deleted user: ${user.email}`);
+            logger_1.logger.info(`Superadmin deleted user: ${user.email}`);
         }
         catch (error) {
-            logger.error("Error deleting user:", error);
+            logger_1.logger.error("Error deleting user:", error);
             throw error;
         }
     }
@@ -223,7 +229,7 @@ export class SuperadminService {
             };
         }
         catch (error) {
-            logger.error("Error listing users:", error);
+            logger_1.logger.error("Error listing users:", error);
             // Print error details to console for debugging
             console.error("Prisma error in listUsers:", error);
             throw error;
@@ -279,7 +285,7 @@ export class SuperadminService {
             return user;
         }
         catch (error) {
-            logger.error("Error getting user by ID:", error);
+            logger_1.logger.error("Error getting user by ID:", error);
             throw error;
         }
     }
@@ -316,7 +322,7 @@ export class SuperadminService {
             };
         }
         catch (error) {
-            logger.error("Error getting dashboard stats:", error);
+            logger_1.logger.error("Error getting dashboard stats:", error);
             throw error;
         }
     }
@@ -328,7 +334,7 @@ export class SuperadminService {
             const [newUsersThisMonth, roleDistribution, activeUsers, userGrowth] = await Promise.all([
                 prisma.user.count({
                     where: {
-                        role: Role.CLIENT,
+                        role: common_1.Role.CLIENT,
                         createdAt: {
                             gte: startOfMonth,
                             lte: endOfMonth,
@@ -343,7 +349,7 @@ export class SuperadminService {
                 }),
                 prisma.user.count({
                     where: {
-                        role: Role.CLIENT,
+                        role: common_1.Role.CLIENT,
                     },
                 }),
                 // Get user growth for last 6 months
@@ -360,7 +366,7 @@ export class SuperadminService {
             };
         }
         catch (error) {
-            logger.error("Error getting user analytics:", error);
+            logger_1.logger.error("Error getting user analytics:", error);
             throw error;
         }
     }
@@ -372,7 +378,7 @@ export class SuperadminService {
             const endOfMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
             const count = await prisma.user.count({
                 where: {
-                    role: Role.CLIENT,
+                    role: common_1.Role.CLIENT,
                     createdAt: {
                         gte: month,
                         lte: endOfMonth,
@@ -398,7 +404,7 @@ export class SuperadminService {
             }
             catch (error) {
                 databaseStatus = "unhealthy";
-                logger.error("Database health check failed:", error);
+                logger_1.logger.error("Database health check failed:", error);
             }
             // Check API status (basic check)
             const apiStatus = "healthy"; // In a real app, you'd check actual endpoints
@@ -417,7 +423,7 @@ export class SuperadminService {
             };
         }
         catch (error) {
-            logger.error("Error getting system health:", error);
+            logger_1.logger.error("Error getting system health:", error);
             throw error;
         }
     }
@@ -441,11 +447,11 @@ export class SuperadminService {
             });
             // Log the cleanup action
             await this.logAction("CLEANUP", "Booking", 0, { count: orphanedBookings.length }, { cleanedCount: orphanedBookings.length });
-            logger.info(`Cleaned up ${orphanedBookings.length} orphaned bookings`);
+            logger_1.logger.info(`Cleaned up ${orphanedBookings.length} orphaned bookings`);
             return { cleanedCount: orphanedBookings.length };
         }
         catch (error) {
-            logger.error("Error cleaning up orphaned bookings:", error);
+            logger_1.logger.error("Error cleaning up orphaned bookings:", error);
             throw error;
         }
     }
@@ -477,7 +483,7 @@ export class SuperadminService {
             }));
         }
         catch (error) {
-            logger.error("Error getting recent activity:", error);
+            logger_1.logger.error("Error getting recent activity:", error);
             throw error;
         }
     }
@@ -495,7 +501,7 @@ export class SuperadminService {
             });
         }
         catch (error) {
-            logger.error("Error logging audit action:", error);
+            logger_1.logger.error("Error logging audit action:", error);
         }
     }
     async getSystemLogs({ page = 1, limit = 20, dateFrom, dateTo, action, entity, userId, }) {
@@ -833,4 +839,5 @@ export class SuperadminService {
         });
     }
 }
-export const superadminService = new SuperadminService();
+exports.SuperadminService = SuperadminService;
+exports.superadminService = new SuperadminService();

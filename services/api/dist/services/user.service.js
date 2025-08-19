@@ -1,26 +1,36 @@
-import { prisma } from "../config/db";
-import { logAudit } from "./audit.service";
-import bcrypt from "bcrypt";
-export async function listUsers() {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.listUsers = listUsers;
+exports.updateUserRole = updateUserRole;
+exports.deleteUser = deleteUser;
+exports.updateProfile = updateProfile;
+exports.changePassword = changePassword;
+const db_1 = require("../config/db");
+const audit_service_1 = require("./audit.service");
+const bcrypt_1 = __importDefault(require("bcrypt"));
+async function listUsers() {
     try {
-        return await prisma.user.findMany();
+        return await db_1.prisma.user.findMany();
     }
     catch (error) {
         console.error("Error in listUsers:", error);
         throw error;
     }
 }
-export async function updateUserRole(userId, role) {
+async function updateUserRole(userId, role) {
     try {
-        const before = await prisma.user.findUnique({ where: { id: userId } });
+        const before = await db_1.prisma.user.findUnique({ where: { id: userId } });
         if (!before) {
             throw new Error("User not found");
         }
-        const user = await prisma.user.update({
+        const user = await db_1.prisma.user.update({
             where: { id: userId },
             data: { role },
         });
-        await logAudit({
+        await (0, audit_service_1.logAudit)({
             userId,
             action: "UPDATE_ROLE",
             entity: "User",
@@ -35,14 +45,14 @@ export async function updateUserRole(userId, role) {
         throw error;
     }
 }
-export async function deleteUser(userId) {
+async function deleteUser(userId) {
     try {
-        const before = await prisma.user.findUnique({ where: { id: userId } });
+        const before = await db_1.prisma.user.findUnique({ where: { id: userId } });
         if (!before) {
             throw new Error("User not found");
         }
-        await prisma.user.delete({ where: { id: userId } });
-        await logAudit({
+        await db_1.prisma.user.delete({ where: { id: userId } });
+        await (0, audit_service_1.logAudit)({
             userId,
             action: "DELETE_USER",
             entity: "User",
@@ -55,15 +65,15 @@ export async function deleteUser(userId) {
         throw error;
     }
 }
-export async function updateProfile(userId, data) {
+async function updateProfile(userId, data) {
     try {
-        const before = await prisma.user.findUnique({ where: { id: userId } });
+        const before = await db_1.prisma.user.findUnique({ where: { id: userId } });
         if (!before) {
             throw new Error("User not found");
         }
         // Check if phone number is being changed and if it's already taken
         if (data.phoneNumber && data.phoneNumber !== before.phoneNumber) {
-            const existingUser = await prisma.user.findFirst({
+            const existingUser = await db_1.prisma.user.findFirst({
                 where: {
                     phoneNumber: data.phoneNumber,
                     id: { not: userId },
@@ -80,11 +90,11 @@ export async function updateProfile(userId, data) {
             updateData.phoneNumber = data.phoneNumber;
         if (data.profileImage)
             updateData.profileImage = data.profileImage;
-        const user = await prisma.user.update({
+        const user = await db_1.prisma.user.update({
             where: { id: userId },
             data: updateData,
         });
-        await logAudit({
+        await (0, audit_service_1.logAudit)({
             userId,
             action: "UPDATE_PROFILE",
             entity: "User",
@@ -99,25 +109,25 @@ export async function updateProfile(userId, data) {
         throw error;
     }
 }
-export async function changePassword(userId, currentPassword, newPassword) {
+async function changePassword(userId, currentPassword, newPassword) {
     try {
-        const user = await prisma.user.findUnique({ where: { id: userId } });
+        const user = await db_1.prisma.user.findUnique({ where: { id: userId } });
         if (!user) {
             throw new Error("User not found");
         }
         // Verify current password
-        const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash);
+        const isValidPassword = await bcrypt_1.default.compare(currentPassword, user.passwordHash);
         if (!isValidPassword) {
             throw new Error("Current password is incorrect");
         }
         // Hash new password
-        const hashedPassword = await bcrypt.hash(newPassword, 12);
+        const hashedPassword = await bcrypt_1.default.hash(newPassword, 12);
         // Update password
-        await prisma.user.update({
+        await db_1.prisma.user.update({
             where: { id: userId },
             data: { passwordHash: hashedPassword },
         });
-        await logAudit({
+        await (0, audit_service_1.logAudit)({
             userId,
             action: "CHANGE_PASSWORD",
             entity: "User",

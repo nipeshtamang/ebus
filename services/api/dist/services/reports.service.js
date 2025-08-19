@@ -1,5 +1,8 @@
-import { prisma } from "../config/db";
-export async function getSummaryReport(filters = {}) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getSummaryReport = getSummaryReport;
+const db_1 = require("../config/db");
+async function getSummaryReport(filters = {}) {
     try {
         const { dateFrom, dateTo, routeId, busId } = filters;
         // Build where clauses for payments/bookings
@@ -29,12 +32,12 @@ export async function getSummaryReport(filters = {}) {
             };
         }
         // Revenue
-        const totalRevenue = await prisma.payment.aggregate({
+        const totalRevenue = await db_1.prisma.payment.aggregate({
             where: paymentWhere,
             _sum: { amount: true },
         });
         // Revenue by month using Prisma instead of raw SQL
-        const revenueByMonth = await prisma.payment.groupBy({
+        const revenueByMonth = await db_1.prisma.payment.groupBy({
             by: ["createdAt"],
             _sum: { amount: true },
             where: paymentWhere,
@@ -45,7 +48,7 @@ export async function getSummaryReport(filters = {}) {
             revenue: item._sum.amount || 0,
         }));
         // Revenue by route using Prisma
-        const revenueByRoute = await prisma.payment.findMany({
+        const revenueByRoute = await db_1.prisma.payment.findMany({
             where: {
                 ...paymentWhere,
                 booking: {
@@ -79,7 +82,7 @@ export async function getSummaryReport(filters = {}) {
             return acc;
         }, {});
         const revenueByRouteFormatted = Object.values(revenueByRouteGrouped).sort((a, b) => b.revenue - a.revenue);
-        const revenueByPaymentMethod = await prisma.payment.groupBy({
+        const revenueByPaymentMethod = await db_1.prisma.payment.groupBy({
             by: ["method"],
             _sum: { amount: true },
             where: paymentWhere,
@@ -91,7 +94,7 @@ export async function getSummaryReport(filters = {}) {
         // Handle busId filtering by getting schedule IDs first
         let scheduleIds;
         if (busId) {
-            const schedules = await prisma.schedule.findMany({
+            const schedules = await db_1.prisma.schedule.findMany({
                 where: { busId },
                 select: { id: true },
             });
@@ -117,9 +120,9 @@ export async function getSummaryReport(filters = {}) {
                 fleet: { busUsage: [], occupancyRate: [] },
             };
         }
-        const totalBookings = await prisma.booking.count({ where: bookingWhere });
+        const totalBookings = await db_1.prisma.booking.count({ where: bookingWhere });
         // Bookings by month using Prisma
-        const bookingsByMonth = await prisma.booking.groupBy({
+        const bookingsByMonth = await db_1.prisma.booking.groupBy({
             by: ["createdAt"],
             _count: { id: true },
             where: bookingWhere,
@@ -129,7 +132,7 @@ export async function getSummaryReport(filters = {}) {
             count: item._count.id,
         }));
         // Bookings by route using Prisma
-        const bookingsByRoute = await prisma.booking.findMany({
+        const bookingsByRoute = await db_1.prisma.booking.findMany({
             where: bookingWhere,
             include: {
                 schedule: {
@@ -151,7 +154,7 @@ export async function getSummaryReport(filters = {}) {
             return acc;
         }, {});
         const bookingsByRouteFormatted = Object.values(bookingsByRouteGrouped).sort((a, b) => b.count - a.count);
-        const bookingsByStatus = await prisma.booking.groupBy({
+        const bookingsByStatus = await db_1.prisma.booking.groupBy({
             by: ["status"],
             _count: { status: true },
             where: bookingWhere,
@@ -168,7 +171,7 @@ export async function getSummaryReport(filters = {}) {
                 userWhere.createdAt = { lte: dateTo };
             }
         }
-        const newUsersByMonth = await prisma.user.groupBy({
+        const newUsersByMonth = await db_1.prisma.user.groupBy({
             by: ["createdAt"],
             _count: { id: true },
             where: userWhere,
@@ -178,7 +181,7 @@ export async function getSummaryReport(filters = {}) {
             count: item._count.id,
         }));
         // Active users by month (users who made bookings)
-        const activeUsersByMonth = await prisma.booking.groupBy({
+        const activeUsersByMonth = await db_1.prisma.booking.groupBy({
             by: ["createdAt"],
             _count: { userId: true },
             where: {
@@ -197,7 +200,7 @@ export async function getSummaryReport(filters = {}) {
         if (busId !== undefined) {
             busWhere.id = { equals: busId };
         }
-        const busUsage = await prisma.bus.findMany({
+        const busUsage = await db_1.prisma.bus.findMany({
             where: busWhere,
             include: {
                 schedules: {
@@ -214,7 +217,7 @@ export async function getSummaryReport(filters = {}) {
             trips: bus.schedules.length,
         }));
         // Occupancy rate calculation
-        const occupancyRate = await prisma.bus.findMany({
+        const occupancyRate = await db_1.prisma.bus.findMany({
             where: busWhere,
             include: {
                 schedules: {
